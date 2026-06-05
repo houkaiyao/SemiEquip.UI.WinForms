@@ -29,7 +29,7 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
             _scrollingText = new ScrollingTextControl
             {
                 Dock = DockStyle.Fill,
-                Text = "设备运行中：Load Port 1 已准备就绪，Robot 正在等待下一步命令。0029",
+                Text = "设备运行中：Load Port 1 已准备就绪，Robot 正在等待下一步命令。0034",
                 BackColor = Color.FromArgb(32, 38, 48),
                 ForeColor = Color.FromArgb(236, 242, 248)
             };

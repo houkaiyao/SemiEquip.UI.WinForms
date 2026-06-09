@@ -14,6 +14,7 @@ namespace SemiEquip.UI.WinForms.Controls
     {
         private readonly DataGridView _grid;
         private readonly List<AlarmInfo> _alarms;
+        private Font _headerFont;
         private Color _infoBackColor = Color.FromArgb(221, 235, 247);
         private Color _warningBackColor = Color.FromArgb(255, 242, 204);
         private Color _alarmBackColor = Color.FromArgb(252, 228, 214);
@@ -71,6 +72,14 @@ namespace SemiEquip.UI.WinForms.Controls
 
         public event EventHandler<AlarmEventArgs> AlarmDoubleClick;
 
+        public event EventHandler<AlarmEventArgs> AlarmAdded;
+
+        public event EventHandler<AlarmEventArgs> AlarmUpdated;
+
+        public event EventHandler AlarmsCleared;
+
+        public event EventHandler AlarmCountChanged;
+
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public IList<AlarmInfo> Alarms
@@ -83,6 +92,33 @@ namespace SemiEquip.UI.WinForms.Controls
         public int AlarmCount
         {
             get { return _alarms.Count; }
+        }
+
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public int DisplayedAlarmCount
+        {
+            get { return _grid.Rows.Count; }
+        }
+
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public IList<AlarmInfo> DisplayedAlarms
+        {
+            get
+            {
+                List<AlarmInfo> displayedAlarms = new List<AlarmInfo>();
+                foreach (DataGridViewRow row in _grid.Rows)
+                {
+                    AlarmInfo alarm = row.Tag as AlarmInfo;
+                    if (alarm != null)
+                    {
+                        displayedAlarms.Add(alarm);
+                    }
+                }
+
+                return displayedAlarms.AsReadOnly();
+            }
         }
 
         [Category("Alarm List")]
@@ -219,6 +255,8 @@ namespace SemiEquip.UI.WinForms.Controls
 
             _alarms.Add(alarm);
             RefreshGridRows();
+            OnAlarmAdded(new AlarmEventArgs(alarm));
+            OnAlarmCountChanged(EventArgs.Empty);
 
             if (_autoScrollToLastAlarm && _grid.Rows.Count > 0)
             {
@@ -228,6 +266,7 @@ namespace SemiEquip.UI.WinForms.Controls
 
         public void SetAlarms(IEnumerable<AlarmInfo> alarms)
         {
+            int previousCount = _alarms.Count;
             _alarms.Clear();
 
             if (alarms != null)
@@ -249,6 +288,11 @@ namespace SemiEquip.UI.WinForms.Controls
             }
 
             RefreshGridRows();
+            if (previousCount != _alarms.Count)
+            {
+                OnAlarmCountChanged(EventArgs.Empty);
+            }
+
             if (_autoScrollToLastAlarm && _grid.Rows.Count > 0)
             {
                 SelectAndScrollToRow(GetLatestAlarmDisplayRowIndex());
@@ -257,8 +301,37 @@ namespace SemiEquip.UI.WinForms.Controls
 
         public void ClearAlarms()
         {
+            bool hadAlarms = _alarms.Count > 0;
             _alarms.Clear();
             _grid.Rows.Clear();
+            OnAlarmsCleared(EventArgs.Empty);
+
+            if (hadAlarms)
+            {
+                OnAlarmCountChanged(EventArgs.Empty);
+            }
+        }
+
+        public bool UpdateAlarm(AlarmInfo alarm)
+        {
+            if (alarm == null)
+            {
+                throw new ArgumentNullException("alarm");
+            }
+
+            if (!_alarms.Contains(alarm))
+            {
+                return false;
+            }
+
+            RefreshGridRows();
+            OnAlarmUpdated(new AlarmEventArgs(alarm));
+            return true;
+        }
+
+        public void RefreshAlarms()
+        {
+            RefreshGridRows();
         }
 
         protected virtual void OnAlarmSelected(AlarmEventArgs e)
@@ -279,11 +352,68 @@ namespace SemiEquip.UI.WinForms.Controls
             }
         }
 
+        protected virtual void OnAlarmAdded(AlarmEventArgs e)
+        {
+            EventHandler<AlarmEventArgs> handler = AlarmAdded;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+        protected virtual void OnAlarmUpdated(AlarmEventArgs e)
+        {
+            EventHandler<AlarmEventArgs> handler = AlarmUpdated;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+        protected virtual void OnAlarmsCleared(EventArgs e)
+        {
+            EventHandler handler = AlarmsCleared;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+        protected virtual void OnAlarmCountChanged(EventArgs e)
+        {
+            EventHandler handler = AlarmCountChanged;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+        protected override void OnFontChanged(EventArgs e)
+        {
+            base.OnFontChanged(e);
+
+            if (_grid != null)
+            {
+                UpdateHeaderFont();
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && _headerFont != null)
+            {
+                _headerFont.Dispose();
+                _headerFont = null;
+            }
+
+            base.Dispose(disposing);
+        }
+
         private void ConfigureGridStyle()
         {
             _grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(42, 49, 60);
             _grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(236, 240, 246);
-            _grid.ColumnHeadersDefaultCellStyle.Font = new Font(Font.FontFamily, 9f, FontStyle.Bold);
+            UpdateHeaderFont();
             _grid.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
             _grid.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
             _grid.GridColor = Color.FromArgb(118, 128, 140);
@@ -379,17 +509,21 @@ namespace SemiEquip.UI.WinForms.Controls
 
         private int GetLatestAlarmDisplayRowIndex()
         {
-            if (_grid.Rows.Count <= 0)
+            if (_grid.Rows.Count <= 0 || _alarms.Count <= 0)
             {
                 return -1;
             }
 
-            if (_displayOrder == AlarmDisplayOrder.Descending)
+            AlarmInfo latestAlarm = _alarms[_alarms.Count - 1];
+            for (int index = 0; index < _grid.Rows.Count; index++)
             {
-                return 0;
+                if (ReferenceEquals(_grid.Rows[index].Tag, latestAlarm))
+                {
+                    return index;
+                }
             }
 
-            return _grid.Rows.Count - 1;
+            return -1;
         }
 
         private void SelectAndScrollToRow(int rowIndex)
@@ -530,6 +664,19 @@ namespace SemiEquip.UI.WinForms.Controls
             field = value;
             RefreshRowStyles();
             Invalidate();
+        }
+
+        private void UpdateHeaderFont()
+        {
+            Font newFont = new Font(Font.FontFamily, 9f, FontStyle.Bold);
+            _grid.ColumnHeadersDefaultCellStyle.Font = newFont;
+
+            if (_headerFont != null)
+            {
+                _headerFont.Dispose();
+            }
+
+            _headerFont = newFont;
         }
     }
 }

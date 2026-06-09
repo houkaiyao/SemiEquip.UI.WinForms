@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -19,24 +20,27 @@ namespace SemiEquip.UI.WinForms.Controls
 
         private readonly FoupSlotCollection _slots;
         private int _slotCount = MaxSlotCount;
-        private bool _maintainAspectRatio = true;
-        private int _slotCornerRadius = 4;
-        private int _slotGap = 3;
-        private int _slotNumberWidth;
         private int _contentPadding = 8;
         private bool _showSlotNumbers;
+        private bool _showSelectionCheckBoxes;
         private bool _showSlotToolTip = true;
+        private bool _showSlotNumberInToolTip = true;
+        private bool _showWaferIdInToolTip = true;
         private bool _autoScaleSlotNumberFont = true;
-        private float _slotWidthRatio = 0.8f;
+        private FoupSlotTextDisplayMode _slotTextDisplayMode = FoupSlotTextDisplayMode.None;
+        private bool _autoScaleSlotTextFont = true;
+        private int _slotTextPadding = 4;
         private readonly ToolTip _slotToolTip;
         private int _hoverSlotNumber;
         private Color _slotBorderColor = Color.FromArgb(92, 104, 118);
         private Color _frameColor = Color.FromArgb(54, 65, 78);
         private Color _slotNumberColor = Color.FromArgb(218, 224, 232);
+        private Color _slotTextColor = Color.FromArgb(18, 22, 28);
         private Color _emptySlotColor = Color.White;
         private Color _beforeProcessSlotColor = Color.FromArgb(55, 137, 255);
         private Color _afterProcessSlotColor = Color.FromArgb(46, 184, 92);
         private Color _abnormalSlotColor = Color.FromArgb(226, 64, 64);
+        private Font _slotTextFont;
 
         public FoupMapControl()
         {
@@ -49,7 +53,9 @@ namespace SemiEquip.UI.WinForms.Controls
             BackColor = Color.FromArgb(24, 29, 36);
             ForeColor = Color.FromArgb(235, 239, 244);
             Font = new Font("Segoe UI", 8.25f, FontStyle.Regular, GraphicsUnit.Point);
+            _slotTextFont = new Font("Segoe UI", 7f, FontStyle.Regular, GraphicsUnit.Point);
             Size = new Size(DefaultWidth, DefaultWidth * 2);
+            MinimumSize = new Size(60, 100);
 
             _slots = new FoupSlotCollection(this);
             _slotToolTip = new ToolTip();
@@ -58,15 +64,17 @@ namespace SemiEquip.UI.WinForms.Controls
 
         public event EventHandler<FoupSlotClickEventArgs> SlotClick;
 
+        public event EventHandler ChooseMapDataChanged;
+
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public FoupSlotCollection Slots
+        public IList<FoupSlotInfo> Slots
         {
-            get { return _slots; }
+            get { return new List<FoupSlotInfo>(_slots).AsReadOnly(); }
         }
 
         [Category("FOUP Map")]
-        [Description("需要绘制的 FOUP Slot 数量，有效范围为 1 到 25。")]
+        [Description("需要绘制的 FOUP Slot 数量，有效范围为 1 到 25。运行时控件 Handle 创建后不允许修改。")]
         [DefaultValue(MaxSlotCount)]
         public int SlotCount
         {
@@ -79,32 +87,15 @@ namespace SemiEquip.UI.WinForms.Controls
                     return;
                 }
 
+                if (IsHandleCreated && !IsInDesignMode())
+                {
+                    throw new InvalidOperationException("SlotCount 只能在控件创建 Handle 前设置。");
+                }
+
                 _slotCount = normalized;
                 ResetSlots();
                 Invalidate();
-            }
-        }
-
-        [Category("FOUP Map")]
-        [Description("调整控件大小时保持高度:宽度为 2:1。")]
-        [DefaultValue(true)]
-        public bool MaintainAspectRatio
-        {
-            get { return _maintainAspectRatio; }
-            set
-            {
-                if (_maintainAspectRatio == value)
-                {
-                    return;
-                }
-
-                _maintainAspectRatio = value;
-                if (_maintainAspectRatio)
-                {
-                    Height = Math.Max(2, Width * 2);
-                }
-
-                Invalidate();
+                OnChooseMapDataChanged(EventArgs.Empty);
             }
         }
 
@@ -127,7 +118,79 @@ namespace SemiEquip.UI.WinForms.Controls
         }
 
         [Category("FOUP Map")]
-        [Description("鼠标悬浮到 Slot 上时，是否通过 Tooltip 显示 Slot 编号。")]
+        [Description("是否在每个 Slot 右侧显示选片勾选框。")]
+        [DefaultValue(false)]
+        public bool ShowSelectionCheckBoxes
+        {
+            get { return _showSelectionCheckBoxes; }
+            set
+            {
+                if (_showSelectionCheckBoxes == value)
+                {
+                    return;
+                }
+
+                _showSelectionCheckBoxes = value;
+                Invalidate();
+            }
+        }
+
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public string ChooseMapData
+        {
+            get
+            {
+                char[] mapping = new char[_slotCount];
+                for (int slotNumber = 1; slotNumber <= _slotCount; slotNumber++)
+                {
+                    mapping[slotNumber - 1] = GetSlot(slotNumber).IsSelected ? '1' : '0';
+                }
+
+                return new string(mapping);
+            }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException("value");
+                }
+
+                if (value.Length != _slotCount)
+                {
+                    throw new ArgumentException("ChooseMapData 长度必须等于当前 SlotCount。", "value");
+                }
+
+                for (int index = 0; index < value.Length; index++)
+                {
+                    if (value[index] != '0' && value[index] != '1')
+                    {
+                        throw new ArgumentException("ChooseMapData 只能包含字符 0 和 1。", "value");
+                    }
+                }
+
+                bool changed = false;
+                for (int slotNumber = 1; slotNumber <= _slotCount; slotNumber++)
+                {
+                    bool selected = value[slotNumber - 1] == '1';
+                    FoupSlotInfo slot = GetSlot(slotNumber);
+                    if (slot.IsSelected != selected)
+                    {
+                        slot.IsSelected = selected;
+                        changed = true;
+                    }
+                }
+
+                if (changed)
+                {
+                    Invalidate();
+                    OnChooseMapDataChanged(EventArgs.Empty);
+                }
+            }
+        }
+
+        [Category("FOUP Map")]
+        [Description("鼠标悬浮到 Slot 上时，是否启用 Tooltip。")]
         [DefaultValue(true)]
         public bool ShowSlotToolTip
         {
@@ -145,6 +208,42 @@ namespace SemiEquip.UI.WinForms.Controls
                     _slotToolTip.Hide(this);
                     _hoverSlotNumber = 0;
                 }
+            }
+        }
+
+        [Category("FOUP Map")]
+        [Description("Tooltip 中是否显示 Slot 编号。")]
+        [DefaultValue(true)]
+        public bool ShowSlotNumberInToolTip
+        {
+            get { return _showSlotNumberInToolTip; }
+            set
+            {
+                if (_showSlotNumberInToolTip == value)
+                {
+                    return;
+                }
+
+                _showSlotNumberInToolTip = value;
+                ResetSlotToolTip();
+            }
+        }
+
+        [Category("FOUP Map")]
+        [Description("Tooltip 中是否显示 WaferID。")]
+        [DefaultValue(true)]
+        public bool ShowWaferIdInToolTip
+        {
+            get { return _showWaferIdInToolTip; }
+            set
+            {
+                if (_showWaferIdInToolTip == value)
+                {
+                    return;
+                }
+
+                _showWaferIdInToolTip = value;
+                ResetSlotToolTip();
             }
         }
 
@@ -167,6 +266,104 @@ namespace SemiEquip.UI.WinForms.Controls
         }
 
         [Category("FOUP Map")]
+        [Description("Slot 图形内部显示的文字内容，可选择不显示、WaferID 或 SlotData。")]
+        [DefaultValue(FoupSlotTextDisplayMode.None)]
+        public FoupSlotTextDisplayMode SlotTextDisplayMode
+        {
+            get { return _slotTextDisplayMode; }
+            set
+            {
+                if (_slotTextDisplayMode == value)
+                {
+                    return;
+                }
+
+                _slotTextDisplayMode = value;
+                Invalidate();
+            }
+        }
+
+        [Category("FOUP Map")]
+        [Description("自动缩小 Slot 内显示文字的字体，避免文字超出 Slot 图形。")]
+        [DefaultValue(true)]
+        public bool AutoScaleSlotTextFont
+        {
+            get { return _autoScaleSlotTextFont; }
+            set
+            {
+                if (_autoScaleSlotTextFont == value)
+                {
+                    return;
+                }
+
+                _autoScaleSlotTextFont = value;
+                Invalidate();
+            }
+        }
+
+        [Category("FOUP Map")]
+        [Description("Slot 内显示文字与 Slot 边缘之间的内边距，单位为像素。")]
+        [DefaultValue(4)]
+        public int SlotTextPadding
+        {
+            get { return _slotTextPadding; }
+            set
+            {
+                _slotTextPadding = Math.Max(0, value);
+                Invalidate();
+            }
+        }
+
+        [Category("FOUP Map")]
+        [Description("Slot 内显示文字使用的字体。")]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+        public Font SlotTextFont
+        {
+            get { return _slotTextFont; }
+            set
+            {
+                Font newFont = value == null
+                    ? new Font(Font.FontFamily, 7f, FontStyle.Regular, GraphicsUnit.Point)
+                    : (Font)value.Clone();
+
+                if (_slotTextFont != null)
+                {
+                    _slotTextFont.Dispose();
+                }
+
+                _slotTextFont = newFont;
+                Invalidate();
+            }
+        }
+
+        [Browsable(false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("请使用 AutoScaleSlotTextFont。")]
+        public bool AutoScaleWaferIdFont
+        {
+            get { return AutoScaleSlotTextFont; }
+            set { AutoScaleSlotTextFont = value; }
+        }
+
+        [Browsable(false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("请使用 SlotTextPadding。")]
+        public int WaferIdTextPadding
+        {
+            get { return SlotTextPadding; }
+            set { SlotTextPadding = value; }
+        }
+
+        [Browsable(false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("请使用 SlotTextFont。")]
+        public Font WaferIdFont
+        {
+            get { return SlotTextFont; }
+            set { SlotTextFont = value; }
+        }
+
+        [Category("FOUP Map")]
         [Description("控件内部内容区域的外边距，单位为像素。")]
         [DefaultValue(8)]
         public int ContentPadding
@@ -175,64 +372,6 @@ namespace SemiEquip.UI.WinForms.Controls
             set
             {
                 _contentPadding = Math.Max(0, value);
-                Invalidate();
-            }
-        }
-
-        [Category("FOUP Map")]
-        [Description("Slot 之间的基础间距，单位为像素。")]
-        [DefaultValue(3)]
-        public int SlotGap
-        {
-            get { return _slotGap; }
-            set
-            {
-                _slotGap = Math.Max(0, value);
-                Invalidate();
-            }
-        }
-
-        [Category("FOUP Map")]
-        [Description("Slot 主体宽度占控件宽度的比例，默认 0.8，约为控件宽度的五分之四。")]
-        [DefaultValue(0.8f)]
-        public float SlotWidthRatio
-        {
-            get { return _slotWidthRatio; }
-            set
-            {
-                float normalized = Math.Max(0.1f, Math.Min(1.0f, value));
-                if (Math.Abs(_slotWidthRatio - normalized) < 0.0001f)
-                {
-                    return;
-                }
-
-                _slotWidthRatio = normalized;
-                Invalidate();
-            }
-        }
-
-        [Category("FOUP Map")]
-        [Description("左侧 Slot 编号区域的最小宽度。默认 0 表示按左1、中8、右1的比例自动计算。")]
-        [DefaultValue(0)]
-        public int SlotNumberWidth
-        {
-            get { return _slotNumberWidth; }
-            set
-            {
-                _slotNumberWidth = Math.Max(0, value);
-                Invalidate();
-            }
-        }
-
-        [Category("FOUP Map")]
-        [Description("每个扁长 Slot 图形使用的圆角半径。")]
-        [DefaultValue(4)]
-        public int SlotCornerRadius
-        {
-            get { return _slotCornerRadius; }
-            set
-            {
-                _slotCornerRadius = Math.Max(0, value);
                 Invalidate();
             }
         }
@@ -321,6 +460,27 @@ namespace SemiEquip.UI.WinForms.Controls
             }
         }
 
+        [Category("FOUP Colors")]
+        [Description("Slot 内显示文字的颜色。")]
+        public Color SlotTextColor
+        {
+            get { return _slotTextColor; }
+            set
+            {
+                _slotTextColor = value;
+                Invalidate();
+            }
+        }
+
+        [Browsable(false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("请使用 SlotTextColor。")]
+        public Color WaferIdColor
+        {
+            get { return SlotTextColor; }
+            set { SlotTextColor = value; }
+        }
+
         public void SetSlotColor(int slotNumber, Color color)
         {
             FoupSlotInfo slot = GetSlot(slotNumber);
@@ -347,6 +507,87 @@ namespace SemiEquip.UI.WinForms.Controls
             return GetSlot(slotNumber).State;
         }
 
+        public void SetWaferId(int slotNumber, string waferId)
+        {
+            FoupSlotInfo slot = GetSlot(slotNumber);
+            slot.WaferId = waferId ?? string.Empty;
+            Invalidate();
+        }
+
+        public string GetWaferId(int slotNumber)
+        {
+            return GetSlot(slotNumber).WaferId;
+        }
+
+        public void ClearWaferIds()
+        {
+            foreach (FoupSlotInfo slot in _slots)
+            {
+                slot.WaferId = string.Empty;
+            }
+
+            Invalidate();
+        }
+
+        public void SetSlotData(int slotNumber, string slotData)
+        {
+            FoupSlotInfo slot = GetSlot(slotNumber);
+            slot.SlotData = slotData ?? string.Empty;
+            Invalidate();
+        }
+
+        public string GetSlotData(int slotNumber)
+        {
+            return GetSlot(slotNumber).SlotData;
+        }
+
+        public void ClearSlotData()
+        {
+            foreach (FoupSlotInfo slot in _slots)
+            {
+                slot.SlotData = string.Empty;
+            }
+
+            Invalidate();
+        }
+
+        public void SetSlotSelected(int slotNumber, bool selected)
+        {
+            FoupSlotInfo slot = GetSlot(slotNumber);
+            if (slot.IsSelected == selected)
+            {
+                return;
+            }
+
+            slot.IsSelected = selected;
+            Invalidate();
+            OnChooseMapDataChanged(EventArgs.Empty);
+        }
+
+        public bool GetSlotSelected(int slotNumber)
+        {
+            return GetSlot(slotNumber).IsSelected;
+        }
+
+        public void ClearSlotSelections()
+        {
+            bool changed = false;
+            foreach (FoupSlotInfo slot in _slots)
+            {
+                if (slot.IsSelected)
+                {
+                    slot.IsSelected = false;
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                Invalidate();
+                OnChooseMapDataChanged(EventArgs.Empty);
+            }
+        }
+
         public Rectangle GetSlotBounds(int slotNumber)
         {
             ValidateSlotNumber(slotNumber);
@@ -355,36 +596,22 @@ namespace SemiEquip.UI.WinForms.Controls
 
         public void ClearSlots()
         {
+            bool selectionChanged = false;
             foreach (FoupSlotInfo slot in _slots)
             {
                 slot.State = FoupSlotState.Empty;
                 slot.Color = _emptySlotColor;
+                slot.WaferId = string.Empty;
+                slot.SlotData = string.Empty;
+                selectionChanged = selectionChanged || slot.IsSelected;
+                slot.IsSelected = false;
             }
 
             Invalidate();
-        }
-
-        protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
-        {
-            if (_maintainAspectRatio && Dock == DockStyle.None)
+            if (selectionChanged)
             {
-                if ((specified & BoundsSpecified.Width) == BoundsSpecified.Width
-                    && (specified & BoundsSpecified.Height) != BoundsSpecified.Height)
-                {
-                    height = Math.Max(2, width * 2);
-                }
-                else if ((specified & BoundsSpecified.Height) == BoundsSpecified.Height
-                    && (specified & BoundsSpecified.Width) != BoundsSpecified.Width)
-                {
-                    width = Math.Max(1, height / 2);
-                }
-                else if ((specified & BoundsSpecified.Size) == BoundsSpecified.Size)
-                {
-                    height = Math.Max(2, width * 2);
-                }
+                OnChooseMapDataChanged(EventArgs.Empty);
             }
-
-            base.SetBoundsCore(x, y, width, height, specified);
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -406,6 +633,16 @@ namespace SemiEquip.UI.WinForms.Controls
         protected override void OnMouseClick(MouseEventArgs e)
         {
             base.OnMouseClick(e);
+
+            if (e.Button == MouseButtons.Left && _showSelectionCheckBoxes)
+            {
+                int selectionSlotNumber = HitTestSelectionCheckBox(e.Location);
+                if (selectionSlotNumber > 0)
+                {
+                    SetSlotSelected(selectionSlotNumber, !GetSlotSelected(selectionSlotNumber));
+                    return;
+                }
+            }
 
             int slotNumber = HitTest(e.Location);
             if (slotNumber > 0)
@@ -432,6 +669,10 @@ namespace SemiEquip.UI.WinForms.Controls
             if (disposing)
             {
                 _slotToolTip.Dispose();
+                if (_slotTextFont != null)
+                {
+                    _slotTextFont.Dispose();
+                }
             }
 
             base.Dispose(disposing);
@@ -440,6 +681,15 @@ namespace SemiEquip.UI.WinForms.Controls
         protected virtual void OnSlotClick(FoupSlotClickEventArgs e)
         {
             EventHandler<FoupSlotClickEventArgs> handler = SlotClick;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+        protected virtual void OnChooseMapDataChanged(EventArgs e)
+        {
+            EventHandler handler = ChooseMapDataChanged;
             if (handler != null)
             {
                 handler(this, e);
@@ -468,6 +718,8 @@ namespace SemiEquip.UI.WinForms.Controls
                 return;
             }
 
+            FoupSlotInfo slot = GetSlot(slotNumber);
+
             if (_showSlotNumbers)
             {
                 Rectangle numberBounds = CalculateSlotNumberBounds(slotBounds);
@@ -484,36 +736,136 @@ namespace SemiEquip.UI.WinForms.Controls
                 }
             }
 
-            using (GraphicsPath path = CreateRoundRectanglePath(slotBounds, _slotCornerRadius))
-            using (SolidBrush fillBrush = new SolidBrush(GetSlot(slotNumber).Color))
+            using (SolidBrush fillBrush = new SolidBrush(slot.Color))
             using (Pen borderPen = new Pen(_slotBorderColor))
             {
-                graphics.FillPath(fillBrush, path);
-                graphics.DrawPath(borderPen, path);
+                graphics.FillRectangle(fillBrush, slotBounds);
+                int right = Math.Max(slotBounds.Left, slotBounds.Right - 1);
+                int bottom = Math.Max(slotBounds.Top, slotBounds.Bottom - 1);
+                graphics.DrawLine(borderPen, slotBounds.Left, slotBounds.Top, right, slotBounds.Top);
+                graphics.DrawLine(borderPen, slotBounds.Left, slotBounds.Top, slotBounds.Left, bottom);
+                graphics.DrawLine(borderPen, right, slotBounds.Top, right, bottom);
+
+                if (slotNumber == 1)
+                {
+                    graphics.DrawLine(borderPen, slotBounds.Left, bottom, right, bottom);
+                }
+            }
+
+            string slotText = ResolveSlotDisplayText(slot);
+            if (!string.IsNullOrEmpty(slotText))
+            {
+                DrawSlotText(graphics, slotBounds, slotText);
+            }
+
+            if (_showSelectionCheckBoxes)
+            {
+                DrawSelectionCheckBox(graphics, slotNumber, slot.IsSelected);
+            }
+        }
+
+        private void DrawSelectionCheckBox(Graphics graphics, int slotNumber, bool isSelected)
+        {
+            Rectangle checkBoxBounds = CalculateSelectionCheckBoxBounds(slotNumber);
+            if (checkBoxBounds.Width <= 2 || checkBoxBounds.Height <= 2)
+            {
+                if (isSelected)
+                {
+                    DrawCompactSelectionMark(graphics, slotNumber);
+                }
+
+                return;
+            }
+
+            using (SolidBrush backBrush = new SolidBrush(Color.White))
+            using (Pen borderPen = new Pen(_slotBorderColor))
+            {
+                graphics.FillRectangle(backBrush, checkBoxBounds);
+                graphics.DrawRectangle(
+                    borderPen,
+                    checkBoxBounds.X,
+                    checkBoxBounds.Y,
+                    checkBoxBounds.Width - 1,
+                    checkBoxBounds.Height - 1);
+            }
+
+            if (!isSelected)
+            {
+                return;
+            }
+
+            int left = checkBoxBounds.Left + Math.Max(1, checkBoxBounds.Width / 5);
+            int middleX = checkBoxBounds.Left + checkBoxBounds.Width / 2;
+            int right = checkBoxBounds.Right - Math.Max(2, checkBoxBounds.Width / 6);
+            int middleY = checkBoxBounds.Top + checkBoxBounds.Height / 2;
+            int bottom = checkBoxBounds.Bottom - Math.Max(2, checkBoxBounds.Height / 5);
+            int top = checkBoxBounds.Top + Math.Max(1, checkBoxBounds.Height / 4);
+
+            using (Pen checkPen = new Pen(_afterProcessSlotColor, Math.Max(1f, checkBoxBounds.Width / 7f)))
+            {
+                checkPen.StartCap = LineCap.Round;
+                checkPen.EndCap = LineCap.Round;
+                graphics.DrawLine(checkPen, left, middleY, middleX, bottom);
+                graphics.DrawLine(checkPen, middleX, bottom, right, top);
+            }
+        }
+
+        private string ResolveSlotDisplayText(FoupSlotInfo slot)
+        {
+            switch (_slotTextDisplayMode)
+            {
+                case FoupSlotTextDisplayMode.WaferId:
+                    return slot.WaferId;
+                case FoupSlotTextDisplayMode.SlotData:
+                    return slot.SlotData;
+                case FoupSlotTextDisplayMode.None:
+                default:
+                    return string.Empty;
+            }
+        }
+
+        private void DrawSlotText(Graphics graphics, Rectangle slotBounds, string slotText)
+        {
+            Rectangle slotTextBounds = Rectangle.Inflate(slotBounds, -_slotTextPadding, 0);
+            if (slotTextBounds.Width <= 0 || slotTextBounds.Height <= 0)
+            {
+                return;
+            }
+
+            using (Font displayFont = CreateSlotTextFont(graphics, slotText, slotTextBounds))
+            {
+                TextRenderer.DrawText(
+                    graphics,
+                    slotText,
+                    displayFont,
+                    slotTextBounds,
+                    _slotTextColor,
+                    TextFormatFlags.HorizontalCenter
+                        | TextFormatFlags.VerticalCenter
+                        | TextFormatFlags.EndEllipsis
+                        | TextFormatFlags.NoPadding
+                        | TextFormatFlags.SingleLine);
             }
         }
 
         private Rectangle CalculateSlotBounds(int slotNumber)
         {
             Rectangle contentBounds = GetContentBounds();
-            int slotAreaWidth = CalculateSlotAreaWidth(contentBounds.Width);
-            int leftAreaWidth = CalculateLeftAreaWidth(contentBounds.Width, slotAreaWidth);
+            int leftAreaWidth = CalculateSideAreaWidth(contentBounds.Width);
+            int slotAreaWidth = CalculateSlotAreaWidth(contentBounds.Width, leftAreaWidth);
             int slotAreaX = contentBounds.X + leftAreaWidth;
-            int slotHeight = CalculateSlotHeightForFullMap(contentBounds.Height);
-            int slotGap = CalculateDynamicSlotGap(contentBounds.Height, slotHeight);
-            int usedHeight = slotHeight * _slotCount + Math.Max(0, _slotCount - 1) * slotGap;
-            int topOffset = Math.Max(0, (contentBounds.Height - usedHeight) / 2);
-            int slotIndexFromTop = _slotCount - slotNumber;
-            int slotY = contentBounds.Top + topOffset + slotIndexFromTop * (slotHeight + slotGap);
 
-            return new Rectangle(slotAreaX, slotY, slotAreaWidth, slotHeight);
+            int slotIndexFromTop = _slotCount - slotNumber;
+            int slotTop = contentBounds.Top + slotIndexFromTop * contentBounds.Height / _slotCount;
+            int slotBottom = contentBounds.Top + (slotIndexFromTop + 1) * contentBounds.Height / _slotCount;
+
+            return new Rectangle(slotAreaX, slotTop, slotAreaWidth, Math.Max(1, slotBottom - slotTop));
         }
 
         private Rectangle CalculateSlotNumberBounds(Rectangle slotBounds)
         {
             Rectangle contentBounds = GetContentBounds();
-            int slotAreaWidth = CalculateSlotAreaWidth(contentBounds.Width);
-            int leftAreaWidth = CalculateLeftAreaWidth(contentBounds.Width, slotAreaWidth);
+            int leftAreaWidth = CalculateSideAreaWidth(contentBounds.Width);
 
             return new Rectangle(
                 contentBounds.X,
@@ -522,21 +874,33 @@ namespace SemiEquip.UI.WinForms.Controls
                 slotBounds.Height);
         }
 
-        private int CalculateSlotAreaWidth(int contentWidth)
+        private Rectangle CalculateSelectionCheckBoxBounds(int slotNumber)
         {
-            return Math.Max(1, (int)Math.Round(contentWidth * _slotWidthRatio));
-        }
+            Rectangle slotBounds = CalculateSlotBounds(slotNumber);
+            Rectangle contentBounds = GetContentBounds();
+            int rightAreaWidth = CalculateSideAreaWidth(contentBounds.Width);
+            int checkBoxSize = Math.Min(slotBounds.Height - 2, rightAreaWidth - 4);
 
-        private int CalculateLeftAreaWidth(int contentWidth, int slotAreaWidth)
-        {
-            int ratioWidth = Math.Max(1, (contentWidth - slotAreaWidth) / 2);
-            if (!_showSlotNumbers || _slotNumberWidth <= 0)
+            if (checkBoxSize <= 0)
             {
-                return ratioWidth;
+                return Rectangle.Empty;
             }
 
-            int maximumLeftWidth = Math.Max(1, contentWidth - slotAreaWidth);
-            return Math.Min(maximumLeftWidth, Math.Max(ratioWidth, _slotNumberWidth));
+            return new Rectangle(
+                slotBounds.Right + (rightAreaWidth - checkBoxSize) / 2,
+                slotBounds.Top + (slotBounds.Height - checkBoxSize) / 2,
+                checkBoxSize,
+                checkBoxSize);
+        }
+
+        private static int CalculateSideAreaWidth(int contentWidth)
+        {
+            return Math.Max(0, contentWidth / 10);
+        }
+
+        private static int CalculateSlotAreaWidth(int contentWidth, int sideAreaWidth)
+        {
+            return Math.Max(1, contentWidth - sideAreaWidth * 2);
         }
 
         private Rectangle GetContentBounds()
@@ -547,23 +911,6 @@ namespace SemiEquip.UI.WinForms.Controls
                 padding,
                 Math.Max(1, Width - padding * 2),
                 Math.Max(1, Height - padding * 2));
-        }
-
-        private int CalculateSlotHeightForFullMap(int contentHeight)
-        {
-            int referenceGap = Math.Max(0, MaxSlotCount - 1) * _slotGap;
-            return Math.Max(1, (contentHeight - referenceGap) / MaxSlotCount);
-        }
-
-        private int CalculateDynamicSlotGap(int contentHeight, int slotHeight)
-        {
-            if (_slotCount <= 1)
-            {
-                return 0;
-            }
-
-            int remainingHeight = contentHeight - slotHeight * _slotCount;
-            return Math.Max(_slotGap, remainingHeight / (_slotCount - 1));
         }
 
         private Font CreateSlotNumberFont(Graphics graphics, Rectangle textBounds)
@@ -606,6 +953,46 @@ namespace SemiEquip.UI.WinForms.Controls
             return new Font(Font.FontFamily, fontSize, Font.Style, Font.Unit);
         }
 
+        private Font CreateSlotTextFont(Graphics graphics, string slotText, Rectangle textBounds)
+        {
+            if (!_autoScaleSlotTextFont)
+            {
+                return (Font)_slotTextFont.Clone();
+            }
+
+            float fontSize = _slotTextFont.Size;
+            float minimumSize = Math.Min(3.5f, fontSize);
+            Size targetSize = new Size(Math.Max(1, textBounds.Width), Math.Max(1, textBounds.Height));
+            TextFormatFlags measureFlags = TextFormatFlags.HorizontalCenter
+                | TextFormatFlags.VerticalCenter
+                | TextFormatFlags.EndEllipsis
+                | TextFormatFlags.NoPadding
+                | TextFormatFlags.SingleLine;
+
+            while (fontSize > minimumSize)
+            {
+                using (Font testFont = new Font(_slotTextFont.FontFamily, fontSize, _slotTextFont.Style, _slotTextFont.Unit))
+                {
+                    Size measuredSize = TextRenderer.MeasureText(
+                        graphics,
+                        slotText,
+                        testFont,
+                        targetSize,
+                        measureFlags);
+
+                    if (measuredSize.Height <= targetSize.Height
+                        && measuredSize.Width <= targetSize.Width)
+                    {
+                        break;
+                    }
+                }
+
+                fontSize -= 0.25f;
+            }
+
+            return new Font(_slotTextFont.FontFamily, fontSize, _slotTextFont.Style, _slotTextFont.Unit);
+        }
+
         private int HitTest(Point location)
         {
             for (int slotNumber = 1; slotNumber <= _slotCount; slotNumber++)
@@ -619,10 +1006,24 @@ namespace SemiEquip.UI.WinForms.Controls
             return 0;
         }
 
+        private int HitTestSelectionCheckBox(Point location)
+        {
+            for (int slotNumber = 1; slotNumber <= _slotCount; slotNumber++)
+            {
+                if (CalculateSelectionCheckBoxBounds(slotNumber).Contains(location))
+                {
+                    return slotNumber;
+                }
+            }
+
+            return 0;
+        }
+
         private void UpdateSlotToolTip(Point location)
         {
-            if (!_showSlotToolTip)
+            if (!_showSlotToolTip || (!_showSlotNumberInToolTip && !_showWaferIdInToolTip))
             {
+                ResetSlotToolTip();
                 return;
             }
 
@@ -639,12 +1040,43 @@ namespace SemiEquip.UI.WinForms.Controls
                 return;
             }
 
+            string tipText = CreateSlotToolTipText(slotNumber);
+            if (string.IsNullOrEmpty(tipText))
+            {
+                ResetSlotToolTip();
+                return;
+            }
+
             _slotToolTip.Show(
-                string.Format("Slot {0:00}", slotNumber),
+                tipText,
                 this,
                 location.X + 12,
                 location.Y + 12,
                 2000);
+        }
+
+        private string CreateSlotToolTipText(int slotNumber)
+        {
+            string slotNumberText = _showSlotNumberInToolTip
+                ? string.Format("Slot {0:00}", slotNumber)
+                : string.Empty;
+            string waferId = GetWaferId(slotNumber);
+            string waferIdText = _showWaferIdInToolTip && !string.IsNullOrEmpty(waferId)
+                ? string.Format("WaferID: {0}", waferId)
+                : string.Empty;
+
+            if (!string.IsNullOrEmpty(slotNumberText) && !string.IsNullOrEmpty(waferIdText))
+            {
+                return slotNumberText + "\r\n" + waferIdText;
+            }
+
+            return !string.IsNullOrEmpty(slotNumberText) ? slotNumberText : waferIdText;
+        }
+
+        private void ResetSlotToolTip()
+        {
+            _hoverSlotNumber = 0;
+            _slotToolTip.Hide(this);
         }
 
         private FoupSlotInfo GetSlot(int slotNumber)
@@ -679,6 +1111,26 @@ namespace SemiEquip.UI.WinForms.Controls
             }
         }
 
+        private void DrawCompactSelectionMark(Graphics graphics, int slotNumber)
+        {
+            Rectangle slotBounds = CalculateSlotBounds(slotNumber);
+            Rectangle contentBounds = GetContentBounds();
+            int rightAreaWidth = CalculateSideAreaWidth(contentBounds.Width);
+            int markSize = Math.Max(1, Math.Min(3, slotBounds.Height));
+            int x = slotBounds.Right + Math.Max(0, (rightAreaWidth - markSize) / 2);
+            int y = slotBounds.Top + Math.Max(0, (slotBounds.Height - markSize) / 2);
+
+            using (SolidBrush brush = new SolidBrush(_afterProcessSlotColor))
+            {
+                graphics.FillRectangle(brush, x, y, markSize, markSize);
+            }
+        }
+
+        private bool IsInDesignMode()
+        {
+            return DesignMode || LicenseManager.UsageMode == LicenseUsageMode.Designtime;
+        }
+
         private void ApplyStateColor(FoupSlotState state, Color color)
         {
             foreach (FoupSlotInfo slot in _slots.Where(item => item.State == state))
@@ -707,32 +1159,5 @@ namespace SemiEquip.UI.WinForms.Controls
             }
         }
 
-        private static GraphicsPath CreateRoundRectanglePath(Rectangle bounds, int radius)
-        {
-            GraphicsPath path = new GraphicsPath();
-            int diameter = Math.Min(radius * 2, Math.Min(bounds.Width, bounds.Height));
-
-            if (diameter <= 0)
-            {
-                path.AddRectangle(bounds);
-                path.CloseFigure();
-                return path;
-            }
-
-            Rectangle arc = new Rectangle(bounds.Location, new Size(diameter, diameter));
-            path.AddArc(arc, 180, 90);
-
-            arc.X = bounds.Right - diameter;
-            path.AddArc(arc, 270, 90);
-
-            arc.Y = bounds.Bottom - diameter;
-            path.AddArc(arc, 0, 90);
-
-            arc.X = bounds.Left;
-            path.AddArc(arc, 90, 90);
-
-            path.CloseFigure();
-            return path;
-        }
     }
 }

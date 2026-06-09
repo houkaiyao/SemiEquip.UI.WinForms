@@ -18,15 +18,21 @@
 
 `FoupMapControl` 用于绘制 FOUP / Cassette 的 Slot Map。
 
-- 支持 `SlotCount`，范围为 1 到 25。
-- 默认鼠标悬浮 Slot 时通过 Tooltip 显示 Slot 号。
+- 支持 `SlotCount`，范围为 1 到 25；运行时控件 Handle 创建后不允许再修改。
+- `Slots` 提供只读槽位快照，槽位数据统一通过控件方法修改，避免重复编号和未重绘问题。
+- 默认鼠标悬浮 Slot 时通过 Tooltip 显示 Slot 编号和 WaferID，可分别控制是否显示。
 - 可选择在左侧直接显示 Slot 号。
-- 每个 Slot 绘制为扁长形状。
-- 默认保持控件高度:宽度为 2:1。
-- Slot 主体默认约占控件宽度的 80%。
-- 当 `SlotCount` 减少时，不拉伸单个 Slot 高度，而是增大 Slot 间距。
+- 每个 Slot 绘制为连续矩形网格。
+- 控件宽高可由调用方任意设置，内部 Slot 会根据可用空间自动渲染。
+- 扣除 `ContentPadding` 后，横向区域固定按 Slot 编号、Slot 主体、选片勾选框约 `1:8:1` 分配。
+- Slot 高度按照可用内容总高度除以 `SlotCount` 计算。
 - 可在 WinForms 设计器中拖拽调整大小。
 - 支持通过代码设置每个 Slot 的颜色。
+- 支持为每个 Slot 设置 `WaferID` 和 `SlotData`，并可选择 Slot 内显示哪一种文字。
+- 使用 `SlotTextColor`、`SlotTextFont`、`SlotTextPadding` 设置 Slot 内文字外观。
+- 旧版 `WaferIdColor`、`WaferIdFont`、`WaferIdTextPadding` 仍可使用，但已标记为过时兼容属性。
+- 支持在 Slot 右侧显示选片勾选框，并通过 `ChooseMapData` 获取或设置选片结果。
+- 小尺寸下无法完整绘制勾选框时，已选 Slot 会使用简化标记显示。
 - 内置状态：
   - `Abnormal`：红色，异常。
   - `BeforeProcess`：蓝色，制程前。
@@ -41,6 +47,15 @@ foupMap.SetSlotState(2, FoupSlotState.BeforeProcess);
 foupMap.SetSlotState(3, FoupSlotState.AfterProcess);
 foupMap.SetSlotState(4, FoupSlotState.Abnormal);
 foupMap.SetSlotColor(5, Color.Gold);
+foupMap.SlotTextDisplayMode = FoupSlotTextDisplayMode.WaferId;
+foupMap.SlotTextColor = Color.White;
+foupMap.SetWaferId(2, "WAFER-0002");
+foupMap.SetSlotData(2, "SLOT-DATA-02");
+foupMap.ShowSlotNumberInToolTip = true;
+foupMap.ShowWaferIdInToolTip = true;
+foupMap.ShowSelectionCheckBoxes = true;
+foupMap.SetSlotSelected(25, true);
+string chooseMapData = foupMap.ChooseMapData; // 0000000000000000000000001
 ```
 
 ## StatusLightControl
@@ -92,6 +107,9 @@ fourColorLight.ShowFrostedLines = true;
 - 支持提示、警告、报警、严重四种等级。
 - 支持添加、设置、清空报警。
 - 可通过 `AlarmCount` 获取当前报警数量。
+- 可通过 `DisplayedAlarmCount` 和 `DisplayedAlarms` 获取当前表格显示内容。
+- 修改已有 `AlarmInfo` 后，可调用 `UpdateAlarm` 或 `RefreshAlarms` 刷新表格。
+- 支持报警新增、更新、清空和数量变化事件。
 - 可通过 `DisplayOrder` 设置正序或倒序显示，默认正序。
 - 可通过 `LimitDisplayCount` 和 `MaxDisplayCount` 按当前显示顺序只显示前 N 条报警。
 - 支持选中和双击事件。
@@ -107,6 +125,8 @@ int alarmCount = alarmList.AlarmCount;
 alarmList.DisplayOrder = AlarmDisplayOrder.Descending;
 alarmList.LimitDisplayCount = true;
 alarmList.MaxDisplayCount = 5;
+alarmList.Alarms[0].AlarmDescription = "更新后的报警描述";
+alarmList.UpdateAlarm(alarmList.Alarms[0]);
 ```
 
 ## ScrollingTextControl
@@ -119,6 +139,7 @@ alarmList.MaxDisplayCount = 5;
 - 支持通过 `ForeColor` 设置字体颜色。
 - 支持通过 `BackColor` 设置背景颜色。
 - 支持设置滚动步长和刷新间隔。
+- 控件隐藏、Handle 销毁或处于设计器中时会自动停止 Timer。
 
 ```csharp
 var scrollingText = new ScrollingTextControl();
@@ -128,3 +149,14 @@ scrollingText.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
 scrollingText.ForeColor = Color.White;
 scrollingText.BackColor = Color.FromArgb(32, 38, 48);
 ```
+
+## 自动化验证
+
+`tests/SemiEquip.UI.WinForms.Tests` 是兼容 `net40` 的自动化验证程序，不依赖第三方测试框架。
+
+```powershell
+dotnet build SemiEquip.UI.WinForms.sln -c Release
+.\tests\SemiEquip.UI.WinForms.Tests\bin\Release\net40\SemiEquip.UI.WinForms.Tests.exe
+```
+
+当前验证覆盖 `SlotCount` 锁定、只读 Slots、`ChooseMapData`、报警排序与更新、滚动文字 Timer 生命周期等核心行为。

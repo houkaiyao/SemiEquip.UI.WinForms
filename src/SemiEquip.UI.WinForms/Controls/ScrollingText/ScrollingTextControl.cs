@@ -39,7 +39,7 @@ namespace SemiEquip.UI.WinForms.Controls
                 Interval = 30
             };
             _scrollTimer.Tick += OnScrollTimerTick;
-            _scrollTimer.Start();
+            UpdateTimerState();
         }
 
         [Category("滚动文字")]
@@ -76,14 +76,11 @@ namespace SemiEquip.UI.WinForms.Controls
                 _scrollingEnabled = value;
                 if (_scrollingEnabled)
                 {
-                    _scrollTimer.Start();
                     ResetScrollPosition();
                 }
-                else
-                {
-                    _scrollTimer.Stop();
-                    Invalidate();
-                }
+
+                UpdateTimerState();
+                Invalidate();
             }
         }
 
@@ -140,6 +137,24 @@ namespace SemiEquip.UI.WinForms.Controls
             ResetScrollPosition();
         }
 
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            UpdateTimerState();
+        }
+
+        protected override void OnHandleDestroyed(EventArgs e)
+        {
+            _scrollTimer.Stop();
+            base.OnHandleDestroyed(e);
+        }
+
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            base.OnVisibleChanged(e);
+            UpdateTimerState();
+        }
+
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
@@ -194,8 +209,9 @@ namespace SemiEquip.UI.WinForms.Controls
 
         private void OnScrollTimerTick(object sender, EventArgs e)
         {
-            if (!_scrollingEnabled)
+            if (!CanRunTimer())
             {
+                UpdateTimerState();
                 return;
             }
 
@@ -248,6 +264,31 @@ namespace SemiEquip.UI.WinForms.Controls
             }
 
             return TextRenderer.MeasureText(text, Font, new Size(int.MaxValue, Math.Max(1, Height)), TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
+        }
+
+        private void UpdateTimerState()
+        {
+            if (CanRunTimer())
+            {
+                _scrollTimer.Start();
+            }
+            else
+            {
+                _scrollTimer.Stop();
+            }
+        }
+
+        private bool CanRunTimer()
+        {
+            return _scrollingEnabled
+                && IsHandleCreated
+                && Visible
+                && !IsInDesignMode();
+        }
+
+        private bool IsInDesignMode()
+        {
+            return DesignMode || LicenseManager.UsageMode == LicenseUsageMode.Designtime;
         }
     }
 }

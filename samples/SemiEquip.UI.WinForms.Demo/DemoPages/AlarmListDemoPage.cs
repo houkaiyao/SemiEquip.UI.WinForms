@@ -61,6 +61,20 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
                 _alarmIndex = 0;
             };
 
+            Button updateButton = CreateButton("更新首条", 648, 46);
+            updateButton.Click += delegate
+            {
+                if (_alarmList.AlarmCount <= 0)
+                {
+                    return;
+                }
+
+                AlarmInfo alarm = _alarmList.Alarms[0];
+                alarm.AlarmDescription = "该报警内容已在运行时更新。";
+                alarm.AlarmLevel = AlarmLevel.Critical;
+                _alarmList.UpdateAlarm(alarm);
+            };
+
             _limitDisplayCheckBox = new CheckBox
             {
                 AutoSize = false,
@@ -123,6 +137,7 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
             optionPanel.Controls.Add(_maxDisplayCountEditor);
             optionPanel.Controls.Add(_limitDisplayCheckBox);
             optionPanel.Controls.Add(clearButton);
+            optionPanel.Controls.Add(updateButton);
             optionPanel.Controls.Add(resetButton);
             optionPanel.Controls.Add(addCriticalButton);
             optionPanel.Controls.Add(addAlarmButton);
@@ -137,6 +152,7 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
             _alarmList.MaxDisplayCount = (int)_maxDisplayCountEditor.Value;
             _alarmList.AlarmSelected += OnAlarmSelected;
             _alarmList.AlarmDoubleClick += OnAlarmDoubleClick;
+            _alarmList.AlarmCountChanged += delegate { UpdateCountStatus(); };
 
             Controls.Add(_alarmList);
             Controls.Add(optionPanel);

@@ -14,12 +14,21 @@ namespace SemiEquip.UI.WinForms.Controls
             SlotNumber = slotNumber;
             State = state;
             Color = color;
+            WaferId = string.Empty;
+            SlotData = string.Empty;
+            IsSelected = false;
         }
 
         public int SlotNumber { get; private set; }
 
-        public FoupSlotState State { get; set; }
+        public FoupSlotState State { get; internal set; }
 
-        public Color Color { get; set; }
+        public Color Color { get; internal set; }
+
+        public string WaferId { get; internal set; }
+
+        public string SlotData { get; internal set; }
+
+        public bool IsSelected { get; internal set; }
     }
 }

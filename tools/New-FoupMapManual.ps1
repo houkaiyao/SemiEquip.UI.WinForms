@@ -148,6 +148,7 @@ Add-Table -Builder $body -Headers @("路径", "说明") -Rows @(
     @("src/SemiEquip.UI.WinForms/Controls/AlarmList", "报警列表控件及其数据类型源码目录。"),
     @("src/SemiEquip.UI.WinForms/Controls/ScrollingText", "滚动文字控件源码目录。"),
     @("samples/SemiEquip.UI.WinForms.Demo", "Demo WinForms 程序，用于验证控件显示和交互。"),
+    @("tests/SemiEquip.UI.WinForms.Tests", "不依赖第三方测试框架的 net40 自动化验证程序。"),
     @("tools", "文档和辅助脚本目录，当前包含本手册生成脚本。")
 )
 
@@ -159,8 +160,8 @@ Add-Table -Builder $body -Headers @("项目", "内容") -Rows @(
     @("目标框架", ".NET Framework 4.0+"),
     @("主要用途", "绘制 FOUP/Cassette slot map，并通过颜色表示每个 slot 的 wafer 状态。"),
     @("最大 slot 数", "25"),
-    @("默认长宽比", "控件高度 : 控件宽度 = 2 : 1"),
-    @("默认 slot 宽度", "约占控件总宽度的 80%。"),
+    @("控件尺寸", "宽高比例不受限制，调用方可自由设置。"),
+    @("横向布局", "扣除 ContentPadding 后，Slot 编号、Slot 主体、选片勾选框约按 1:8:1 分配。"),
     @("默认 slot 号显示", "鼠标悬浮 tooltip 显示，例如 Slot 01。")
 )
 
@@ -182,6 +183,14 @@ Add-Code -Builder $body -Lines @(
     "foupMap.SetSlotState(3, FoupSlotState.AfterProcess);",
     "foupMap.SetSlotState(4, FoupSlotState.Abnormal);",
     "foupMap.SetSlotColor(5, Color.Gold);",
+    "foupMap.SlotTextDisplayMode = FoupSlotTextDisplayMode.WaferId;",
+    "foupMap.SetWaferId(2, `"WAFER-0002`");",
+    "foupMap.SetSlotData(2, `"SLOT-DATA-02`");",
+    "foupMap.ShowSlotNumberInToolTip = true;",
+    "foupMap.ShowWaferIdInToolTip = true;",
+    "foupMap.ShowSelectionCheckBoxes = true;",
+    "foupMap.SetSlotSelected(25, true);",
+    "string chooseMapData = foupMap.ChooseMapData;",
     "",
     "Controls.Add(foupMap);"
 )
@@ -197,23 +206,26 @@ Add-Table -Builder $body -Headers @("枚举值", "默认颜色", "建议含义")
 
 Add-Heading -Builder $body -Text "6. 属性说明" -Level 1
 Add-Table -Builder $body -Headers @("属性", "类型", "默认值", "说明") -Rows @(
-    @("SlotCount", "int", "25", "实际绘制的 slot 数量，范围 1 到 25。"),
-    @("MaintainAspectRatio", "bool", "true", "控件缩放时保持高度:宽度 = 2:1。"),
-    @("SlotWidthRatio", "float", "0.8", "slot 主体宽度占控件宽度的比例。"),
-    @("SlotGap", "int", "3", "25 槽满载情况下的最小 slot 间距；SlotCount 减小时控件会增大实际间距。"),
+    @("SlotCount", "int", "25", "实际绘制的 slot 数量，范围 1 到 25；运行时控件 Handle 创建后不允许修改。"),
     @("ContentPadding", "int", "8", "控件内容区域边距。"),
-    @("SlotCornerRadius", "int", "4", "slot 圆角半径。"),
-    @("ShowSlotToolTip", "bool", "true", "鼠标悬浮 slot 时显示 slot 号提示。"),
+    @("ShowSlotToolTip", "bool", "true", "是否启用鼠标悬浮 Tooltip。"),
+    @("ShowSlotNumberInToolTip", "bool", "true", "Tooltip 中是否显示 Slot 编号。"),
+    @("ShowWaferIdInToolTip", "bool", "true", "Tooltip 中是否显示 WaferID。"),
     @("ShowSlotNumbers", "bool", "false", "是否在左侧直接绘制 slot 编号。"),
+    @("ShowSelectionCheckBoxes", "bool", "false", "是否在每个 slot 右侧显示选片勾选框。"),
     @("AutoScaleSlotNumberFont", "bool", "true", "左侧编号开启时，自动缩小字号避免裁剪。"),
-    @("SlotNumberWidth", "int", "32", "左侧编号显示区域宽度。"),
+    @("SlotTextDisplayMode", "FoupSlotTextDisplayMode", "None", "选择 Slot 图形内部不显示文字、显示 WaferID 或显示 SlotData。"),
+    @("AutoScaleSlotTextFont", "bool", "true", "自动缩小 Slot 内显示文字，避免超出 slot 图形。"),
+    @("SlotTextPadding", "int", "4", "Slot 内显示文字与 slot 边缘之间的内边距。"),
+    @("SlotTextFont", "Font", "Segoe UI 7pt", "Slot 内显示文字使用的字体。"),
     @("EmptySlotColor", "Color", "White", "无片状态颜色。"),
     @("BeforeProcessSlotColor", "Color", "Blue", "制程前状态颜色。"),
     @("AfterProcessSlotColor", "Color", "Green", "制程后状态颜色。"),
     @("AbnormalSlotColor", "Color", "Red", "异常状态颜色。"),
     @("SlotBorderColor", "Color", "Gray", "slot 边框颜色。"),
     @("FrameColor", "Color", "Dark gray", "控件外框颜色。"),
-    @("SlotNumberColor", "Color", "Light gray", "左侧编号文字颜色。")
+    @("SlotNumberColor", "Color", "Light gray", "左侧编号文字颜色。"),
+    @("SlotTextColor", "Color", "Dark", "Slot 内显示文字的颜色。")
 )
 
 Add-Heading -Builder $body -Text "7. 方法说明" -Level 1
@@ -222,13 +234,24 @@ Add-Table -Builder $body -Headers @("方法", "说明") -Rows @(
     @("GetSlotState(int slotNumber)", "读取指定 slot 的当前状态。"),
     @("SetSlotColor(int slotNumber, Color color)", "设置指定 slot 的自定义颜色，并将状态标记为 Custom。"),
     @("GetSlotColor(int slotNumber)", "读取指定 slot 的当前颜色。"),
+    @("SetWaferId(int slotNumber, string waferId)", "设置指定 slot 的 WaferID。"),
+    @("GetWaferId(int slotNumber)", "读取指定 slot 的 WaferID。"),
+    @("ClearWaferIds()", "清空所有 slot 的 WaferID。"),
+    @("SetSlotData(int slotNumber, string slotData)", "设置指定 slot 的 SlotData。"),
+    @("GetSlotData(int slotNumber)", "读取指定 slot 的 SlotData。"),
+    @("ClearSlotData()", "清空所有 slot 的 SlotData。"),
+    @("ChooseMapData", "按 Slot 编号顺序获取或设置选片字符串。Slot 1 对应第 1 位，Slot 25 对应第 25 位。"),
+    @("SetSlotSelected(int slotNumber, bool selected)", "设置指定 slot 是否被选中。"),
+    @("GetSlotSelected(int slotNumber)", "读取指定 slot 是否被选中。"),
+    @("ClearSlotSelections()", "清空所有 slot 的选片状态。"),
     @("GetSlotBounds(int slotNumber)", "获取指定 slot 在控件内的绘制矩形，可用于定位菜单或扩展交互。"),
-    @("ClearSlots()", "将所有 slot 重置为 Empty 状态。")
+    @("ClearSlots()", "将所有 slot 重置为 Empty 状态，并清空 WaferID、SlotData 和选片状态。")
 )
 
 Add-Heading -Builder $body -Text "8. 事件说明" -Level 1
 Add-Table -Builder $body -Headers @("事件", "事件参数", "说明") -Rows @(
-    @("SlotClick", "FoupSlotClickEventArgs", "鼠标点击 slot 时触发。事件参数包含 SlotNumber、Button、Location。")
+    @("SlotClick", "FoupSlotClickEventArgs", "鼠标点击 slot 时触发。事件参数包含 SlotNumber、Button、Location。"),
+    @("ChooseMapDataChanged", "EventArgs", "选片状态或 ChooseMapData 发生变化时触发。")
 )
 Add-Code -Builder $body -Lines @(
     "foupMap.SlotClick += OnFoupSlotClick;",
@@ -242,18 +265,19 @@ Add-Code -Builder $body -Lines @(
 )
 
 Add-Heading -Builder $body -Text "9. 渲染规则" -Level 1
-Add-Paragraph -Builder $body -Text "控件默认为竖向显示，整体高度约为宽度的 2 倍。调用方可以通过拖拽控件改变尺寸；当 MaintainAspectRatio 为 true 时，控件会自动修正为 2:1 的显示比例。"
-Add-Paragraph -Builder $body -Text "slot 主体默认靠右绘制，宽度约为控件宽度的 80%。当 ShowSlotNumbers 为 true 时，左侧会优先保留编号区域，避免 slot 覆盖编号。"
-Add-Paragraph -Builder $body -Text "slot 高度以最大 25 槽布局为基准。当 SlotCount 减少时，控件不会拉伸 slot 高度，而是增大 slot 间距，使视觉上更接近真实 FOUP 载具。"
+Add-Paragraph -Builder $body -Text "控件宽高比例不受限制，调用方可以通过设计器或代码自由设置尺寸。内部 slot 会根据 ContentPadding、SlotCount 和当前控件大小自动重新布局。"
+Add-Paragraph -Builder $body -Text "扣除 ContentPadding 后，横向区域固定按 Slot 编号、Slot 主体、选片勾选框约 1:8:1 分配。左右区域始终保留，显示开关只控制内容是否绘制。"
+Add-Paragraph -Builder $body -Text "slot 使用连续矩形网格绘制，并在 ContentPadding 保留的内容区域内，按照可用总高度除以 SlotCount 分配每个 slot 的高度。"
 Add-Paragraph -Builder $body -Text "slot 编号默认通过鼠标悬浮 tooltip 显示，避免小尺寸下文字被裁剪。若必须直接显示编号，可开启 ShowSlotNumbers。"
+Add-Paragraph -Builder $body -Text "Slots 属性提供只读槽位快照，业务代码应通过 SetSlotState、SetWaferId、SetSlotData 和 SetSlotSelected 等方法修改槽位。小尺寸无法完整显示勾选框时，已选槽位会显示简化标记。"
 
 Add-Heading -Builder $body -Text "10. Demo 说明" -Level 1
-Add-Paragraph -Builder $body -Text "DemoForm 中包含一个 FoupMapControl、SlotCount 数值输入、Reset Sample 按钮、slot 点击信息显示，以及一个 Timer 模拟实时刷新。"
+Add-Paragraph -Builder $body -Text "DemoForm 中包含一个固定 SlotCount 的 FoupMapControl、Reset Sample 按钮、slot 点击信息显示，以及一个 Timer 模拟实时刷新。"
 Add-Paragraph -Builder $body -Text "Timer 每秒推进一个 slot 状态，顺序为 Empty -> BeforeProcess -> AfterProcess -> Abnormal -> Empty，用于验证控件动态刷新。"
 
 Add-Heading -Builder $body -Text "11. 设计器使用建议" -Level 1
-Add-Paragraph -Builder $body -Text "控件已标记 ToolboxItem(true)，可被 WinForms Designer 识别。建议在设计器中先拖放控件，然后设置 SlotCount、SlotWidthRatio、颜色属性和是否显示 tooltip。"
-Add-Paragraph -Builder $body -Text "如果需要非 2:1 比例布局，可将 MaintainAspectRatio 设为 false，但建议设备 HMI 中保持统一比例，减少画面跳动。"
+Add-Paragraph -Builder $body -Text "控件已标记 ToolboxItem(true)，可被 WinForms Designer 识别。建议在设计器中先拖放控件，然后设置 SlotCount、颜色属性、显示开关和是否显示 tooltip。"
+Add-Paragraph -Builder $body -Text "调整控件尺寸后，应检查较小尺寸下 Slot 编号、WaferID 和选片勾选框是否仍具备足够的显示空间。"
 
 Add-Heading -Builder $body -Text "12. 后续控件扩展预留" -Level 1
 Add-Paragraph -Builder $body -Text "后续新增控件时，建议每个控件都补充以下内容：控件目标、应用场景、属性表、方法表、事件表、状态颜色表、Demo 示例、注意事项、版本变更记录。"
@@ -321,6 +345,9 @@ Add-Table -Builder $body -Headers @("类型或成员", "说明") -Rows @(
     @("SetAlarms(IEnumerable<AlarmInfo> alarms)", "批量设置报警列表。"),
     @("ClearAlarms()", "清空报警列表。"),
     @("AlarmCount", "获取当前已添加的报警数量。"),
+    @("DisplayedAlarmCount / DisplayedAlarms", "获取当前表格实际显示的报警数量和只读快照。"),
+    @("UpdateAlarm(AlarmInfo alarm)", "修改已存在的 AlarmInfo 后刷新对应报警显示。"),
+    @("RefreshAlarms()", "重新刷新当前报警表格。"),
     @("DisplayOrder", "报警显示顺序，Ascending 为添加顺序，Descending 为最新加入优先。"),
     @("LimitDisplayCount", "是否限制表格当前显示的报警数量。完整报警仍保存在 Alarms 中。"),
     @("MaxDisplayCount", "限制显示时最多显示的报警数量。开启限制后按 DisplayOrder 排序结果取前 N 条报警。"),
@@ -349,7 +376,7 @@ Add-Code -Builder $body -Lines @(
 )
 
 Add-Heading -Builder $body -Text "16. ScrollingTextControl 滚动文字控件" -Level 1
-Add-Paragraph -Builder $body -Text "ScrollingTextControl 用于显示水平滚动文字，适合设备状态提示、生产线消息、报警摘要等区域。控件支持从左到右和从右到左两种方向，并复用 WinForms 标准 Text、Font、ForeColor、BackColor 属性设置文字内容、字体、字体颜色和背景颜色。"
+Add-Paragraph -Builder $body -Text "ScrollingTextControl 用于显示水平滚动文字，适合设备状态提示、生产线消息、报警摘要等区域。控件支持从左到右和从右到左两种方向，并复用 WinForms 标准 Text、Font、ForeColor、BackColor 属性设置文字内容、字体、字体颜色和背景颜色。控件隐藏、Handle 销毁或处于设计器中时会自动停止 Timer。"
 Add-Table -Builder $body -Headers @("属性", "说明") -Rows @(
     @("Text", "需要滚动显示的文字内容。"),
     @("ScrollDirection", "滚动方向，RightToLeft 为从右到左，LeftToRight 为从左到右。"),
@@ -378,7 +405,8 @@ Add-Table -Builder $body -Headers @("版本", "日期", "内容", "维护人") -
     @("0.2.0", "2026-06-05", "新增 StatusLightControl 状态灯控件说明。", "Codex"),
     @("0.3.0", "2026-06-05", "新增 FourColorLightControl 四色灯控件说明。", "Codex"),
     @("0.4.0", "2026-06-05", "新增 AlarmListControl 报警列表控件说明。", "Codex"),
-    @("0.5.0", "2026-06-05", "新增 ScrollingTextControl 滚动文字控件说明。", "Codex")
+    @("0.5.0", "2026-06-05", "新增 ScrollingTextControl 滚动文字控件说明。", "Codex"),
+    @("0.6.0", "2026-06-09", "补充 SlotCount 锁定、只读 Slots、报警更新、Timer 生命周期和自动化验证说明。", "Codex")
 )
 
 $documentXml = @"
@@ -537,7 +565,23 @@ Set-Content -LiteralPath (Join-Path $tempRoot "word\_rels\document.xml.rels") -V
 Set-Content -LiteralPath (Join-Path $tempRoot "docProps\core.xml") -Value $coreXml -Encoding UTF8
 Set-Content -LiteralPath (Join-Path $tempRoot "docProps\app.xml") -Value $appXml -Encoding UTF8
 
-Compress-Archive -Path (Join-Path $tempRoot "*") -DestinationPath $zipPath -Force
+Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$archive = [System.IO.Compression.ZipFile]::Open($zipPath, [System.IO.Compression.ZipArchiveMode]::Create)
+try {
+    foreach ($file in Get-ChildItem -LiteralPath $tempRoot -File -Recurse) {
+        $entryName = $file.FullName.Substring($tempRoot.Length).TrimStart("\").Replace("\", "/")
+        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+            $archive,
+            $file.FullName,
+            $entryName,
+            [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
+    }
+}
+finally {
+    $archive.Dispose()
+}
+
 Move-Item -LiteralPath $zipPath -Destination $documentPath -Force
 
 if (Test-Path -LiteralPath $tempRoot) {

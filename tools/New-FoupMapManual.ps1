@@ -130,9 +130,9 @@ New-Item -ItemType Directory -Force -Path (Join-Path $tempRoot "docProps") | Out
 $body = New-Object System.Text.StringBuilder
 
 Add-Paragraph -Builder $body -Text "SemiEquip.UI.WinForms 控件开发手册" -Style "Title"
-Add-Paragraph -Builder $body -Text "控件：FoupMapControl / FOUP Map 显示控件，StatusLightControl / 状态灯控件，FourColorLightControl / 四色灯控件，AlarmListControl / 报警列表控件，ScrollingTextControl / 滚动文字控件" -Style "Subtitle"
+Add-Paragraph -Builder $body -Text "控件：FoupMapControl / FOUP Map 显示控件，FourColorLightControl / 四色灯控件" -Style "Subtitle"
 Add-Paragraph -Builder $body -Text "适用技术栈：C#、WinForms、.NET Framework 4.0 及以上。"
-Add-Paragraph -Builder $body -Text "当前文档版本：0.1.0。建议后续每新增一个控件，都按本文档结构补充独立章节。"
+Add-Paragraph -Builder $body -Text "当前文档版本：0.4.0。当前仓库仅保留 FoupMapControl 和 FourColorLightControl。"
 
 Add-Heading -Builder $body -Text "1. 文档目的" -Level 1
 Add-Paragraph -Builder $body -Text "本文档用于说明 SemiEquip.UI.WinForms 控件库中控件的设计目标、调用方式、属性、方法、事件、渲染规则和后续扩展预留内容。"
@@ -143,10 +143,7 @@ Add-Table -Builder $body -Headers @("路径", "说明") -Rows @(
     @("src/SemiEquip.UI.WinForms", "控件库项目，输出可被 WinForms 项目引用的 DLL。"),
     @("src/SemiEquip.UI.WinForms/Controls", "控件源码根目录，按控件模块建立子目录。"),
     @("src/SemiEquip.UI.WinForms/Controls/FoupMap", "FOUP Map 控件及其 Slot 状态、事件参数、集合等辅助类型。"),
-    @("src/SemiEquip.UI.WinForms/Controls/StatusLight", "状态灯控件源码目录。"),
     @("src/SemiEquip.UI.WinForms/Controls/FourColorLight", "四色灯控件源码目录。"),
-    @("src/SemiEquip.UI.WinForms/Controls/AlarmList", "报警列表控件及其数据类型源码目录。"),
-    @("src/SemiEquip.UI.WinForms/Controls/ScrollingText", "滚动文字控件源码目录。"),
     @("samples/SemiEquip.UI.WinForms.Demo", "Demo WinForms 程序，用于验证控件显示和交互。"),
     @("tests/SemiEquip.UI.WinForms.Tests", "不依赖第三方测试框架的 net40 自动化验证程序。"),
     @("tools", "文档和辅助脚本目录，当前包含本手册生成脚本。")
@@ -290,26 +287,7 @@ Add-Table -Builder $body -Headers @("计划控件", "建议用途", "状态") -R
     @("TrendChartControl", "实时趋势曲线控件，显示温度、压力、流量等。", "待开发")
 )
 
-Add-Heading -Builder $body -Text "13. StatusLightControl 状态灯控件" -Level 1
-Add-Paragraph -Builder $body -Text "StatusLightControl 用于绘制设备软件中常见的状态灯，整体外形为正方形，内部绘制圆形灯。圆形灯默认不保留外边距，贴近控件边界显示；默认不显示正方形外框线和圆灯边框线，并通过高光和暗部阴影增强层次感。可通过 LightColor 在运行时动态设置红、绿、黄、蓝等颜色。"
-Add-Table -Builder $body -Headers @("属性", "类型", "默认值", "说明") -Rows @(
-    @("LightColor", "Color", "Green", "圆形灯当前显示的颜色，可在运行时动态修改。"),
-    @("MaintainAspectRatio", "bool", "true", "调整控件大小时保持整体外形为正方形。"),
-    @("LightPadding", "int", "0", "圆形灯与正方形外框之间的间距，默认贴近控件边界。"),
-    @("LightBorderColor", "Color", "Transparent", "圆形灯边框颜色，默认透明即不显示边框线。"),
-    @("FrameColor", "Color", "Transparent", "正方形外框颜色，默认透明即不显示外框线。"),
-    @("ShadowColor", "Color", "Transparent black", "圆形灯暗部阴影颜色。"),
-    @("HighlightColor", "Color", "Transparent white", "圆形灯高光颜色。")
-)
-Add-Code -Builder $body -Lines @(
-    "using SemiEquip.UI.WinForms.Controls;",
-    "",
-    "var statusLight = new StatusLightControl();",
-    "statusLight.LightColor = Color.Red;",
-    "statusLight.LightColor = Color.LimeGreen;"
-)
-
-Add-Heading -Builder $body -Text "14. FourColorLightControl 四色灯控件" -Level 1
+Add-Heading -Builder $body -Text "13. FourColorLightControl 四色灯控件" -Level 1
 Add-Paragraph -Builder $body -Text "FourColorLightControl 用于绘制竖向四色灯，从上到下依次为红、黄、绿、蓝四个相连灯段。控件按真实塔灯的圆柱体灯罩效果绘制，正视图为高大于宽的柱状结构；两侧暗、中间柔亮，并通过横向细纹模拟磨砂或棱纹塑料效果。每个灯通过独立 bool 属性控制亮暗，True 显示亮色，False 显示暗色。"
 Add-Table -Builder $body -Headers @("属性", "类型", "默认值", "说明") -Rows @(
     @("RedLightOn", "bool", "false", "红灯是否点亮。"),
@@ -336,77 +314,11 @@ Add-Code -Builder $body -Lines @(
     "fourColorLight.ShowFrostedLines = true;"
 )
 
-Add-Heading -Builder $body -Text "15. AlarmListControl 报警列表控件" -Level 1
-Add-Paragraph -Builder $body -Text "AlarmListControl 用于显示设备报警列表，默认包含报警ID、报警事件、报警描述、报警等级四列。控件通过 AlarmLevel 自动修改整行颜色，便于操作员快速识别报警严重程度。控件内部完整保存已添加报警，表格显示顺序由 DisplayOrder 控制，默认正序；开启 LimitDisplayCount 后，会按当前显示顺序只显示前 N 条报警，适合主页面摘要区域使用。"
-Add-Table -Builder $body -Headers @("类型或成员", "说明") -Rows @(
-    @("AlarmInfo", "报警数据对象，包含 AlarmId、AlarmEvent、AlarmDescription、AlarmLevel、OccurTime。"),
-    @("AlarmLevel", "报警等级枚举，包含 Info、Warning、Alarm、Critical。"),
-    @("AddAlarm(AlarmInfo alarm)", "添加一条报警并刷新行颜色。"),
-    @("SetAlarms(IEnumerable<AlarmInfo> alarms)", "批量设置报警列表。"),
-    @("ClearAlarms()", "清空报警列表。"),
-    @("AlarmCount", "获取当前已添加的报警数量。"),
-    @("DisplayedAlarmCount / DisplayedAlarms", "获取当前表格实际显示的报警数量和只读快照。"),
-    @("UpdateAlarm(AlarmInfo alarm)", "修改已存在的 AlarmInfo 后刷新对应报警显示。"),
-    @("RefreshAlarms()", "重新刷新当前报警表格。"),
-    @("DisplayOrder", "报警显示顺序，Ascending 为添加顺序，Descending 为最新加入优先。"),
-    @("LimitDisplayCount", "是否限制表格当前显示的报警数量。完整报警仍保存在 Alarms 中。"),
-    @("MaxDisplayCount", "限制显示时最多显示的报警数量。开启限制后按 DisplayOrder 排序结果取前 N 条报警。"),
-    @("AlarmSelected", "选中报警行时触发。"),
-    @("AlarmDoubleClick", "双击报警行时触发。")
-)
-Add-Table -Builder $body -Headers @("等级", "默认含义", "默认行色") -Rows @(
-    @("Info", "提示", "浅蓝色"),
-    @("Warning", "警告", "浅黄色"),
-    @("Alarm", "报警", "浅橙色"),
-    @("Critical", "严重", "浅红色")
-)
-Add-Code -Builder $body -Lines @(
-    "using SemiEquip.UI.WinForms.Controls;",
-    "",
-    "var alarmList = new AlarmListControl();",
-    "alarmList.AddAlarm(new AlarmInfo(",
-    "    `"ALM-0001`",",
-    "    `"传输报警`",",
-    "    `"Robot 取片动作超时，请检查轴状态。`",",
-    "    AlarmLevel.Alarm));",
-    "int alarmCount = alarmList.AlarmCount;",
-    "alarmList.DisplayOrder = AlarmDisplayOrder.Descending;",
-    "alarmList.LimitDisplayCount = true;",
-    "alarmList.MaxDisplayCount = 5;"
-)
-
-Add-Heading -Builder $body -Text "16. ScrollingTextControl 滚动文字控件" -Level 1
-Add-Paragraph -Builder $body -Text "ScrollingTextControl 用于显示水平滚动文字，适合设备状态提示、生产线消息、报警摘要等区域。控件支持从左到右和从右到左两种方向，并复用 WinForms 标准 Text、Font、ForeColor、BackColor 属性设置文字内容、字体、字体颜色和背景颜色。控件隐藏、Handle 销毁或处于设计器中时会自动停止 Timer。"
-Add-Table -Builder $body -Headers @("属性", "说明") -Rows @(
-    @("Text", "需要滚动显示的文字内容。"),
-    @("ScrollDirection", "滚动方向，RightToLeft 为从右到左，LeftToRight 为从左到右。"),
-    @("ScrollingEnabled", "是否启用滚动；关闭后文字居中显示。"),
-    @("ScrollStep", "每次滚动移动的像素数。"),
-    @("ScrollInterval", "滚动刷新间隔，单位为毫秒。"),
-    @("TextPadding", "文字与控件边界之间的间距。"),
-    @("Font", "文字字体类型、字号和样式。"),
-    @("ForeColor", "文字颜色。"),
-    @("BackColor", "背景颜色。")
-)
-Add-Code -Builder $body -Lines @(
-    "using SemiEquip.UI.WinForms.Controls;",
-    "",
-    "var scrollingText = new ScrollingTextControl();",
-    "scrollingText.Text = `"设备运行中：Robot 正在等待下一步命令。`";",
-    "scrollingText.ScrollDirection = ScrollingTextDirection.RightToLeft;",
-    "scrollingText.Font = new Font(`"Segoe UI`", 12f, FontStyle.Bold);",
-    "scrollingText.ForeColor = Color.White;",
-    "scrollingText.BackColor = Color.FromArgb(32, 38, 48);"
-)
-
-Add-Heading -Builder $body -Text "17. 文档维护记录" -Level 1
+Add-Heading -Builder $body -Text "14. 文档维护记录" -Level 1
 Add-Table -Builder $body -Headers @("版本", "日期", "内容", "维护人") -Rows @(
     @("0.1.0", "2026-06-04", "创建 FoupMapControl 第一个控件开发手册。", "Codex"),
-    @("0.2.0", "2026-06-05", "新增 StatusLightControl 状态灯控件说明。", "Codex"),
     @("0.3.0", "2026-06-05", "新增 FourColorLightControl 四色灯控件说明。", "Codex"),
-    @("0.4.0", "2026-06-05", "新增 AlarmListControl 报警列表控件说明。", "Codex"),
-    @("0.5.0", "2026-06-05", "新增 ScrollingTextControl 滚动文字控件说明。", "Codex"),
-    @("0.6.0", "2026-06-09", "补充 SlotCount 锁定、只读 Slots、报警更新、Timer 生命周期和自动化验证说明。", "Codex")
+    @("0.4.0", "2026-06-24", "按项目范围精简为仅保留 FoupMapControl 和 FourColorLightControl。", "Codex")
 )
 
 $documentXml = @"

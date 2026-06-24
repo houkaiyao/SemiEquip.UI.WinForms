@@ -29,7 +29,7 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
             _foupMap = new FoupMapControl
             {
                 Location = new Point(0, 0),
-                Size = new Size(350, 800),
+                Size = new Size(300, 800),
                 SlotCount = 25,
                 Anchor = AnchorStyles.Left | AnchorStyles.Top,
                 ShowSlotNumbers = true,

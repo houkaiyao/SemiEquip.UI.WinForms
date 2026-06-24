@@ -2,16 +2,13 @@
 
 面向半导体自动化设备软件的 WinForms 自定义控件库。
 
-项目目标为 **C# / .NET Framework 4.0+ / WinForms**，当前已包含 `FoupMapControl`、`StatusLightControl`、`FourColorLightControl`、`AlarmListControl`、`ScrollingTextControl`。后续可在同一个控件库中继续增加更多设备软件常用控件。
+项目目标为 **C# / .NET Framework 4.0+ / WinForms**，当前仅保留 `FoupMapControl`、`FourColorLightControl` 两个控件。后续可在同一个控件库中继续增加更多设备软件常用控件。
 
 ## 项目结构
 
 - `src/SemiEquip.UI.WinForms`：可复用自定义控件库。
 - `src/SemiEquip.UI.WinForms/Controls/FoupMap`：FOUP Map 控件及其辅助类型。
-- `src/SemiEquip.UI.WinForms/Controls/StatusLight`：状态灯控件。
 - `src/SemiEquip.UI.WinForms/Controls/FourColorLight`：四色灯控件。
-- `src/SemiEquip.UI.WinForms/Controls/AlarmList`：报警列表控件及其数据类型。
-- `src/SemiEquip.UI.WinForms/Controls/ScrollingText`：滚动文字控件。
 - `samples/SemiEquip.UI.WinForms.Demo`：WinForms Demo 示例程序。
 
 ## FoupMapControl
@@ -58,25 +55,6 @@ foupMap.SetSlotSelected(25, true);
 string chooseMapData = foupMap.ChooseMapData; // 0000000000000000000000001
 ```
 
-## StatusLightControl
-
-`StatusLightControl` 用于绘制设备软件中常见的状态灯。
-
-- 整体外形为正方形。
-- 内部绘制圆形灯。
-- 默认保持控件宽度和高度为 1:1。
-- 圆形灯默认不保留外边距，贴近控件边界显示。
-- 默认不显示正方形外框线和圆灯边框线。
-- 内置高光和暗部阴影，使灯泡显示更有层次。
-- 可通过 `LightColor` 在运行时动态修改灯色。
-- 可配置圆灯内边距、圆灯边框颜色、正方形外框颜色、高光颜色和阴影颜色。
-
-```csharp
-var statusLight = new StatusLightControl();
-statusLight.LightColor = Color.Red;
-statusLight.LightColor = Color.LimeGreen;
-```
-
 ## FourColorLightControl
 
 `FourColorLightControl` 用于绘制竖向四色灯，从上到下依次为红、黄、绿、蓝四个相连灯段。控件按真实塔灯的圆柱体灯罩效果绘制，正视图为高大于宽的柱状结构。
@@ -98,58 +76,6 @@ fourColorLight.BlueLightOn = false;
 fourColorLight.ShowFrostedLines = true;
 ```
 
-## AlarmListControl
-
-`AlarmListControl` 用于显示设备报警列表。
-
-- 默认四列：报警ID、报警事件、报警描述、报警等级。
-- 通过 `AlarmLevel` 自动修改整行颜色。
-- 支持提示、警告、报警、严重四种等级。
-- 支持添加、设置、清空报警。
-- 可通过 `AlarmCount` 获取当前报警数量。
-- 可通过 `DisplayedAlarmCount` 和 `DisplayedAlarms` 获取当前表格显示内容。
-- 修改已有 `AlarmInfo` 后，可调用 `UpdateAlarm` 或 `RefreshAlarms` 刷新表格。
-- 支持报警新增、更新、清空和数量变化事件。
-- 可通过 `DisplayOrder` 设置正序或倒序显示，默认正序。
-- 可通过 `LimitDisplayCount` 和 `MaxDisplayCount` 按当前显示顺序只显示前 N 条报警。
-- 支持选中和双击事件。
-
-```csharp
-var alarmList = new AlarmListControl();
-alarmList.AddAlarm(new AlarmInfo(
-    "ALM-0001",
-    "传输报警",
-    "Robot 取片动作超时，请检查轴状态。",
-    AlarmLevel.Alarm));
-int alarmCount = alarmList.AlarmCount;
-alarmList.DisplayOrder = AlarmDisplayOrder.Descending;
-alarmList.LimitDisplayCount = true;
-alarmList.MaxDisplayCount = 5;
-alarmList.Alarms[0].AlarmDescription = "更新后的报警描述";
-alarmList.UpdateAlarm(alarmList.Alarms[0]);
-```
-
-## ScrollingTextControl
-
-`ScrollingTextControl` 用于显示水平滚动文字，适合设备状态提示、生产线消息、报警摘要等区域。
-
-- 支持从右到左、从左到右两种滚动方向。
-- 支持通过 `Text` 设置显示文字。
-- 支持通过 `Font` 设置字体类型和字号。
-- 支持通过 `ForeColor` 设置字体颜色。
-- 支持通过 `BackColor` 设置背景颜色。
-- 支持设置滚动步长和刷新间隔。
-- 控件隐藏、Handle 销毁或处于设计器中时会自动停止 Timer。
-
-```csharp
-var scrollingText = new ScrollingTextControl();
-scrollingText.Text = "设备运行中：Robot 正在等待下一步命令。";
-scrollingText.ScrollDirection = ScrollingTextDirection.RightToLeft;
-scrollingText.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
-scrollingText.ForeColor = Color.White;
-scrollingText.BackColor = Color.FromArgb(32, 38, 48);
-```
-
 ## 自动化验证
 
 `tests/SemiEquip.UI.WinForms.Tests` 是兼容 `net40` 的自动化验证程序，不依赖第三方测试框架。
@@ -159,4 +85,4 @@ dotnet build SemiEquip.UI.WinForms.sln -c Release
 .\tests\SemiEquip.UI.WinForms.Tests\bin\Release\net40\SemiEquip.UI.WinForms.Tests.exe
 ```
 
-当前验证覆盖 `SlotCount` 锁定、只读 Slots、`ChooseMapData`、报警排序与更新、滚动文字 Timer 生命周期等核心行为。
+当前验证覆盖 `FoupMapControl` 的 `SlotCount` 锁定、只读 Slots、`ChooseMapData`、WaferID 与 SlotData 等核心行为；`FourColorLightControl` 通过解决方案构建覆盖编译验证。

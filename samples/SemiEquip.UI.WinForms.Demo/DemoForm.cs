@@ -68,10 +68,7 @@ namespace SemiEquip.UI.WinForms.Demo
         private void RegisterDemoPages()
         {
             _demoPages.Add(new DemoPageInfo("FOUP Map 控件", delegate { return new FoupMapDemoPage(); }));
-            _demoPages.Add(new DemoPageInfo("状态灯控件", delegate { return new StatusLightDemoPage(); }));
             _demoPages.Add(new DemoPageInfo("四色灯控件", delegate { return new FourColorLightDemoPage(); }));
-            _demoPages.Add(new DemoPageInfo("Alarm List 控件", delegate { return new AlarmListDemoPage(); }));
-            _demoPages.Add(new DemoPageInfo("滚动文字控件", delegate { return new ScrollingTextDemoPage(); }));
         }
 
         private void LoadDemoSelectorItems()

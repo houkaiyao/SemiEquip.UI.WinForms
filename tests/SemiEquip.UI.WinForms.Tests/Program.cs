@@ -17,7 +17,7 @@ namespace SemiEquip.UI.WinForms.Tests
                 Run("FoupMap 创建后锁定 SlotCount", TestLockedSlotCount);
                 Run("FoupMap Slots 为只读集合", TestReadOnlySlots);
                 Run("FoupMap ChooseMapData 映射", TestChooseMapData);
-                Run("FoupMap WaferID 与 SlotData", TestSlotTextData);
+                Run("FoupMap SlotText 与 SlotTipText", TestSlotTextData);
 
                 Console.WriteLine("全部验证通过，共 {0} 项。", _passedCount);
                 return 0;
@@ -74,16 +74,17 @@ namespace SemiEquip.UI.WinForms.Tests
         {
             using (FoupMapControl control = new FoupMapControl())
             {
-                control.SetWaferId(1, "WAFER-01");
-                control.SetSlotData(1, "SLOT-DATA-01");
+                control.SetSlotText(1, "SLOT-TEXT-01");
+                control.SetSlotTipText(1, "SLOT-TIP-01");
 
-                control.SlotTextDisplayMode = FoupSlotTextDisplayMode.WaferId;
-                AssertEqual("WAFER-01", control.GetWaferId(1), "WaferID");
-                AssertEqual(FoupSlotTextDisplayMode.WaferId, control.SlotTextDisplayMode, "WaferID 显示模式");
+                AssertEqual("SLOT-TEXT-01", control.GetSlotText(1), "SlotText");
+                AssertEqual("SLOT-TIP-01", control.GetSlotTipText(1), "SlotTipText");
 
-                control.SlotTextDisplayMode = FoupSlotTextDisplayMode.SlotData;
-                AssertEqual("SLOT-DATA-01", control.GetSlotData(1), "SlotData");
-                AssertEqual(FoupSlotTextDisplayMode.SlotData, control.SlotTextDisplayMode, "SlotData 显示模式");
+                control.ClearSlotTexts();
+                control.ClearSlotTipTexts();
+
+                AssertEqual(string.Empty, control.GetSlotText(1), "清空后的 SlotText");
+                AssertEqual(string.Empty, control.GetSlotTipText(1), "清空后的 SlotTipText");
             }
         }
 

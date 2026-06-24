@@ -19,8 +19,9 @@ namespace SemiEquip.UI.WinForms.Demo
             Text = "SemiEquip.UI.WinForms Demo";
             StartPosition = FormStartPosition.CenterScreen;
             MinimumSize = new Size(1000, 1000);
-            BackColor = Color.FromArgb(18, 22, 28);
-            ForeColor = Color.FromArgb(230, 235, 242);
+            Font = new Font("Times New Roman", 9f, FontStyle.Regular, GraphicsUnit.Point);
+            BackColor = Color.FromArgb(230, 235, 242);
+            ForeColor = Color.FromArgb(32, 38, 46);
 
             _demoPages = new List<DemoPageInfo>();
             RegisterDemoPages();
@@ -30,7 +31,7 @@ namespace SemiEquip.UI.WinForms.Demo
                 Dock = DockStyle.Top,
                 Height = 64,
                 Padding = new Padding(24, 18, 24, 12),
-                BackColor = Color.FromArgb(24, 30, 38)
+                BackColor = Color.FromArgb(210, 216, 224)
             };
 
             Label selectorLabel = new Label
@@ -54,7 +55,7 @@ namespace SemiEquip.UI.WinForms.Demo
             {
                 Dock = DockStyle.Fill,
                 Padding = new Padding(24),
-                BackColor = Color.FromArgb(18, 22, 28)
+                BackColor = Color.FromArgb(230, 235, 242)
             };
 
             headerPanel.Controls.Add(_demoSelector);

@@ -15,26 +15,28 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
 
         public FoupMapDemoPage()
         {
-            BackColor = Color.FromArgb(18, 22, 28);
-            ForeColor = Color.FromArgb(230, 235, 242);
+            Font = new Font("Times New Roman", 9f, FontStyle.Regular, GraphicsUnit.Point);
+            BackColor = Color.FromArgb(230, 235, 242);
+            ForeColor = Color.FromArgb(32, 38, 46);
             Padding = new Padding(8);
 
             Panel controlPanel = new Panel
             {
                 Dock = DockStyle.Left,
                 Width = 350,
-                BackColor = Color.FromArgb(18, 22, 28)
+                BackColor = Color.FromArgb(230, 235, 242)
             };
 
             _foupMap = new FoupMapControl
             {
                 Location = new Point(0, 0),
-                Size = new Size(300, 800),
+                Size = new Size(200, 400),
                 SlotCount = 25,
                 Anchor = AnchorStyles.Left | AnchorStyles.Top,
                 ShowSlotNumbers = true,
-                SlotTextDisplayMode = FoupSlotTextDisplayMode.WaferId,
-                SlotTextColor = Color.White,
+                ShowSlotText = true,
+                ShowSlotTip = true,
+                SlotTextColor = Color.FromArgb(18, 22, 28),
                 ShowSelectionCheckBoxes = true
             };
             _foupMap.SlotClick += OnFoupSlotClick;
@@ -44,7 +46,7 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
             {
                 Dock = DockStyle.Fill,
                 Padding = new Padding(24),
-                BackColor = Color.FromArgb(18, 22, 28)
+                BackColor = Color.FromArgb(230, 235, 242)
             };
 
             Label titleLabel = new Label
@@ -53,7 +55,7 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
                 Dock = DockStyle.Top,
                 Height = 36,
                 Text = "FOUP Map 控件",
-                Font = new Font(Font.FontFamily, 12f, FontStyle.Bold),
+                Font = new Font("Times New Roman", 12f, FontStyle.Bold, GraphicsUnit.Point),
                 TextAlign = ContentAlignment.MiddleLeft
             };
 
@@ -65,20 +67,17 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
             };
             resetButton.Click += delegate { LoadSampleSlots(); };
 
-            ComboBox slotTextDisplaySelector = new ComboBox
+            CheckBox showSlotTextCheckBox = new CheckBox
             {
-                DropDownStyle = ComboBoxStyle.DropDownList,
                 Location = new Point(0, 96),
-                Size = new Size(180, 24)
+                Size = new Size(180, 24),
+                Text = "显示 SlotText",
+                Checked = true
             };
-            slotTextDisplaySelector.Items.Add("Slot 内不显示文字");
-            slotTextDisplaySelector.Items.Add("Slot 内显示 WaferID");
-            slotTextDisplaySelector.Items.Add("Slot 内显示 SlotData");
-            slotTextDisplaySelector.SelectedIndexChanged += delegate
+            showSlotTextCheckBox.CheckedChanged += delegate
             {
-                _foupMap.SlotTextDisplayMode = (FoupSlotTextDisplayMode)slotTextDisplaySelector.SelectedIndex;
+                _foupMap.ShowSlotText = showSlotTextCheckBox.Checked;
             };
-            slotTextDisplaySelector.SelectedIndex = 1;
 
             CheckBox showSelectionCheckBox = new CheckBox
             {
@@ -92,36 +91,23 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
             {
                 _foupMap.ShowSelectionCheckBoxes = showSelectionCheckBox.Checked;
             };
-            CheckBox showSlotNumberToolTipCheckBox = new CheckBox
+            CheckBox showSlotTipCheckBox = new CheckBox
             {
                 AutoSize = false,
                 Location = new Point(0, 160),
                 Size = new Size(190, 24),
-                Text = "悬浮显示 Slot 编号",
+                Text = "显示 SlotTipText",
                 Checked = true
             };
-            showSlotNumberToolTipCheckBox.CheckedChanged += delegate
+            showSlotTipCheckBox.CheckedChanged += delegate
             {
-                _foupMap.ShowSlotNumberInToolTip = showSlotNumberToolTipCheckBox.Checked;
-            };
-
-            CheckBox showWaferIdToolTipCheckBox = new CheckBox
-            {
-                AutoSize = false,
-                Location = new Point(0, 188),
-                Size = new Size(190, 24),
-                Text = "悬浮显示 WaferID",
-                Checked = true
-            };
-            showWaferIdToolTipCheckBox.CheckedChanged += delegate
-            {
-                _foupMap.ShowWaferIdInToolTip = showWaferIdToolTipCheckBox.Checked;
+                _foupMap.ShowSlotTip = showSlotTipCheckBox.Checked;
             };
 
             _statusLabel = new Label
             {
                 AutoSize = false,
-                Location = new Point(0, 224),
+                Location = new Point(0, 196),
                 Size = new Size(320, 92),
                 Text = "点击 Slot 查看槽位信息。"
             };
@@ -133,17 +119,16 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
             _timerLabel = new Label
             {
                 AutoSize = false,
-                Location = new Point(0, 336),
+                Location = new Point(0, 308),
                 Size = new Size(320, 48),
                 Text = "Timer：等待刷新..."
             };
 
             optionPanel.Controls.Add(_timerLabel);
             optionPanel.Controls.Add(_statusLabel);
-            optionPanel.Controls.Add(showWaferIdToolTipCheckBox);
-            optionPanel.Controls.Add(showSlotNumberToolTipCheckBox);
+            optionPanel.Controls.Add(showSlotTipCheckBox);
             optionPanel.Controls.Add(showSelectionCheckBox);
-            optionPanel.Controls.Add(slotTextDisplaySelector);
+            optionPanel.Controls.Add(showSlotTextCheckBox);
             optionPanel.Controls.Add(resetButton);
             optionPanel.Controls.Add(titleLabel);
 
@@ -167,27 +152,24 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
 
             for (int slot = 1; slot <= _foupMap.SlotCount; slot++)
             {
-                _foupMap.SetSlotData(slot, string.Format("SLOT-DATA-{0:00}", slot));
+                _foupMap.SetSlotText(slot, string.Format("S{0:00}", slot));
+                _foupMap.SetSlotTipText(slot, string.Format("Slot {0:00} 示例提示文本", slot));
 
                 if (slot % 9 == 0)
                 {
                     _foupMap.SetSlotState(slot, FoupSlotState.Abnormal);
-                    _foupMap.SetWaferId(slot, string.Format("W{0:000}", slot));
                 }
                 else if (slot % 4 == 0)
                 {
                     _foupMap.SetSlotState(slot, FoupSlotState.AfterProcess);
-                    _foupMap.SetWaferId(slot, string.Format("W{0:000}", slot));
                 }
                 else if (slot % 3 == 0)
                 {
                     _foupMap.SetSlotState(slot, FoupSlotState.BeforeProcess);
-                    _foupMap.SetWaferId(slot, string.Format("W{0:000}", slot));
                 }
                 else
                 {
                     _foupMap.SetSlotState(slot, FoupSlotState.Empty);
-                    _foupMap.SetWaferId(slot, string.Empty);
                 }
             }
         }
@@ -207,13 +189,13 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
 
             FoupSlotState nextState = GetNextState(_foupMap.GetSlotState(_timerSlot));
             _foupMap.SetSlotState(_timerSlot, nextState);
-            _foupMap.SetWaferId(
-                _timerSlot,
-                nextState == FoupSlotState.Empty ? string.Empty : string.Format("W{0:000}", _timerSlot));
+            _foupMap.SetSlotText(_timerSlot, nextState == FoupSlotState.Empty ? string.Empty : string.Format("S{0:00}", _timerSlot));
+            _foupMap.SetSlotTipText(_timerSlot, string.Format("Slot {0:00} -> {1}", _timerSlot, nextState));
             _timerLabel.Text = string.Format("Timer：Slot {0:00} -> {1}", _timerSlot, nextState);
 
-            _foupMap.SetSlotData(1,"1001");
-            _foupMap.SetWaferId(1, "1001");
+            _foupMap.SetSlotText(1, "0000 999");
+            _foupMap.SetSlotText(2, "0000  00");
+            _foupMap.SetSlotTipText(1, "ASDFGHJKL123456789");
         }
 
         private static FoupSlotState GetNextState(FoupSlotState state)
@@ -240,7 +222,8 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
                 e.SlotNumber,
                 _foupMap.GetSlotState(e.SlotNumber),
                 _foupMap.GetSlotColor(e.SlotNumber).Name);
-            _statusLabel.Text += string.Format("\r\nWaferID: {0}", _foupMap.GetWaferId(e.SlotNumber));
+            _statusLabel.Text += string.Format("\r\nSlotText: {0}", _foupMap.GetSlotText(e.SlotNumber));
+            _statusLabel.Text += string.Format("\r\nSlotTipText: {0}", _foupMap.GetSlotTipText(e.SlotNumber));
 
             _foupMap.SetSlotState(e.SlotNumber, PLCStateToSlotState(900));
         }

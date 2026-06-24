@@ -14,8 +14,8 @@ namespace SemiEquip.UI.WinForms.Controls
             SlotNumber = slotNumber;
             State = state;
             Color = color;
-            WaferId = string.Empty;
-            SlotData = string.Empty;
+            SlotText = string.Empty;
+            SlotTipText = string.Empty;
             IsSelected = false;
         }
 
@@ -25,9 +25,9 @@ namespace SemiEquip.UI.WinForms.Controls
 
         public Color Color { get; internal set; }
 
-        public string WaferId { get; internal set; }
+        public string SlotText { get; internal set; }
 
-        public string SlotData { get; internal set; }
+        public string SlotTipText { get; internal set; }
 
         public bool IsSelected { get; internal set; }
     }

@@ -20,21 +20,19 @@ namespace SemiEquip.UI.WinForms.Controls
 
         private readonly FoupSlotCollection _slots;
         private int _slotCount = MaxSlotCount;
-        private int _contentPadding = 8;
+        private int _contentPadding = 5;
         private bool _showSlotNumbers;
         private bool _showSelectionCheckBoxes;
-        private bool _showSlotToolTip = true;
-        private bool _showSlotNumberInToolTip = true;
-        private bool _showWaferIdInToolTip = true;
+        private bool _showSlotText;
+        private bool _showSlotTip = true;
         private bool _autoScaleSlotNumberFont = true;
-        private FoupSlotTextDisplayMode _slotTextDisplayMode = FoupSlotTextDisplayMode.None;
         private bool _autoScaleSlotTextFont = true;
         private int _slotTextPadding = 4;
         private readonly ToolTip _slotToolTip;
         private int _hoverSlotNumber;
         private Color _slotBorderColor = Color.FromArgb(92, 104, 118);
-        private Color _frameColor = Color.FromArgb(54, 65, 78);
-        private Color _slotNumberColor = Color.FromArgb(218, 224, 232);
+        private Color _frameColor = Color.FromArgb(180, 186, 194);
+        private Color _slotNumberColor = Color.Black;
         private Color _slotTextColor = Color.FromArgb(18, 22, 28);
         private Color _emptySlotColor = Color.White;
         private Color _beforeProcessSlotColor = Color.FromArgb(55, 137, 255);
@@ -50,10 +48,10 @@ namespace SemiEquip.UI.WinForms.Controls
                 | ControlStyles.UserPaint
                 | ControlStyles.SupportsTransparentBackColor, true);
 
-            BackColor = Color.FromArgb(24, 29, 36);
+            BackColor = Color.Transparent;
             ForeColor = Color.FromArgb(235, 239, 244);
-            Font = new Font("Segoe UI", 8.25f, FontStyle.Regular, GraphicsUnit.Point);
-            _slotTextFont = new Font("Segoe UI", 7f, FontStyle.Regular, GraphicsUnit.Point);
+            Font = new Font("Times New Roman", 8.25f, FontStyle.Regular, GraphicsUnit.Point);
+            _slotTextFont = new Font("Times New Roman", 7f, FontStyle.Regular, GraphicsUnit.Point);
             Size = new Size(DefaultWidth, DefaultWidth * 2);
             MinimumSize = new Size(60, 100);
 
@@ -190,60 +188,41 @@ namespace SemiEquip.UI.WinForms.Controls
         }
 
         [Category("FOUP Map")]
-        [Description("鼠标悬浮到 Slot 上时，是否启用 Tooltip。")]
-        [DefaultValue(true)]
-        public bool ShowSlotToolTip
+        [Description("是否显示 SlotText。")]
+        [DefaultValue(false)]
+        public bool ShowSlotText
         {
-            get { return _showSlotToolTip; }
+            get { return _showSlotText; }
             set
             {
-                if (_showSlotToolTip == value)
+                if (_showSlotText == value)
                 {
                     return;
                 }
 
-                _showSlotToolTip = value;
-                if (!_showSlotToolTip)
-                {
-                    _slotToolTip.Hide(this);
-                    _hoverSlotNumber = 0;
-                }
+                _showSlotText = value;
+                Invalidate();
             }
         }
 
         [Category("FOUP Map")]
-        [Description("Tooltip 中是否显示 Slot 编号。")]
+        [Description("鼠标悬浮到 Slot 上时，是否显示 SlotTipText。")]
         [DefaultValue(true)]
-        public bool ShowSlotNumberInToolTip
+        public bool ShowSlotTip
         {
-            get { return _showSlotNumberInToolTip; }
+            get { return _showSlotTip; }
             set
             {
-                if (_showSlotNumberInToolTip == value)
+                if (_showSlotTip == value)
                 {
                     return;
                 }
 
-                _showSlotNumberInToolTip = value;
-                ResetSlotToolTip();
-            }
-        }
-
-        [Category("FOUP Map")]
-        [Description("Tooltip 中是否显示 WaferID。")]
-        [DefaultValue(true)]
-        public bool ShowWaferIdInToolTip
-        {
-            get { return _showWaferIdInToolTip; }
-            set
-            {
-                if (_showWaferIdInToolTip == value)
+                _showSlotTip = value;
+                if (!_showSlotTip)
                 {
-                    return;
+                    ResetSlotToolTip();
                 }
-
-                _showWaferIdInToolTip = value;
-                ResetSlotToolTip();
             }
         }
 
@@ -261,24 +240,6 @@ namespace SemiEquip.UI.WinForms.Controls
                 }
 
                 _autoScaleSlotNumberFont = value;
-                Invalidate();
-            }
-        }
-
-        [Category("FOUP Map")]
-        [Description("Slot 图形内部显示的文字内容，可选择不显示、WaferID 或 SlotData。")]
-        [DefaultValue(FoupSlotTextDisplayMode.None)]
-        public FoupSlotTextDisplayMode SlotTextDisplayMode
-        {
-            get { return _slotTextDisplayMode; }
-            set
-            {
-                if (_slotTextDisplayMode == value)
-                {
-                    return;
-                }
-
-                _slotTextDisplayMode = value;
                 Invalidate();
             }
         }
@@ -334,33 +295,6 @@ namespace SemiEquip.UI.WinForms.Controls
                 _slotTextFont = newFont;
                 Invalidate();
             }
-        }
-
-        [Browsable(false)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("请使用 AutoScaleSlotTextFont。")]
-        public bool AutoScaleWaferIdFont
-        {
-            get { return AutoScaleSlotTextFont; }
-            set { AutoScaleSlotTextFont = value; }
-        }
-
-        [Browsable(false)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("请使用 SlotTextPadding。")]
-        public int WaferIdTextPadding
-        {
-            get { return SlotTextPadding; }
-            set { SlotTextPadding = value; }
-        }
-
-        [Browsable(false)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("请使用 SlotTextFont。")]
-        public Font WaferIdFont
-        {
-            get { return SlotTextFont; }
-            set { SlotTextFont = value; }
         }
 
         [Category("FOUP Map")]
@@ -472,15 +406,6 @@ namespace SemiEquip.UI.WinForms.Controls
             }
         }
 
-        [Browsable(false)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("请使用 SlotTextColor。")]
-        public Color WaferIdColor
-        {
-            get { return SlotTextColor; }
-            set { SlotTextColor = value; }
-        }
-
         public void SetSlotColor(int slotNumber, Color color)
         {
             FoupSlotInfo slot = GetSlot(slotNumber);
@@ -507,45 +432,45 @@ namespace SemiEquip.UI.WinForms.Controls
             return GetSlot(slotNumber).State;
         }
 
-        public void SetWaferId(int slotNumber, string waferId)
+        public void SetSlotText(int slotNumber, string slotText)
         {
             FoupSlotInfo slot = GetSlot(slotNumber);
-            slot.WaferId = waferId ?? string.Empty;
+            slot.SlotText = slotText ?? string.Empty;
             Invalidate();
         }
 
-        public string GetWaferId(int slotNumber)
+        public string GetSlotText(int slotNumber)
         {
-            return GetSlot(slotNumber).WaferId;
+            return GetSlot(slotNumber).SlotText;
         }
 
-        public void ClearWaferIds()
+        public void ClearSlotTexts()
         {
             foreach (FoupSlotInfo slot in _slots)
             {
-                slot.WaferId = string.Empty;
+                slot.SlotText = string.Empty;
             }
 
             Invalidate();
         }
 
-        public void SetSlotData(int slotNumber, string slotData)
+        public void SetSlotTipText(int slotNumber, string slotTipText)
         {
             FoupSlotInfo slot = GetSlot(slotNumber);
-            slot.SlotData = slotData ?? string.Empty;
+            slot.SlotTipText = slotTipText ?? string.Empty;
             Invalidate();
         }
 
-        public string GetSlotData(int slotNumber)
+        public string GetSlotTipText(int slotNumber)
         {
-            return GetSlot(slotNumber).SlotData;
+            return GetSlot(slotNumber).SlotTipText;
         }
 
-        public void ClearSlotData()
+        public void ClearSlotTipTexts()
         {
             foreach (FoupSlotInfo slot in _slots)
             {
-                slot.SlotData = string.Empty;
+                slot.SlotTipText = string.Empty;
             }
 
             Invalidate();
@@ -601,8 +526,8 @@ namespace SemiEquip.UI.WinForms.Controls
             {
                 slot.State = FoupSlotState.Empty;
                 slot.Color = _emptySlotColor;
-                slot.WaferId = string.Empty;
-                slot.SlotData = string.Empty;
+                slot.SlotText = string.Empty;
+                slot.SlotTipText = string.Empty;
                 selectionChanged = selectionChanged || slot.IsSelected;
                 slot.IsSelected = false;
             }
@@ -702,10 +627,8 @@ namespace SemiEquip.UI.WinForms.Controls
             frameBounds.Width -= 1;
             frameBounds.Height -= 1;
 
-            using (SolidBrush brush = new SolidBrush(BackColor))
             using (Pen pen = new Pen(_frameColor))
             {
-                graphics.FillRectangle(brush, ClientRectangle);
                 graphics.DrawRectangle(pen, frameBounds);
             }
         }
@@ -752,7 +675,7 @@ namespace SemiEquip.UI.WinForms.Controls
                 }
             }
 
-            string slotText = ResolveSlotDisplayText(slot);
+            string slotText = _showSlotText ? slot.SlotText : string.Empty;
             if (!string.IsNullOrEmpty(slotText))
             {
                 DrawSlotText(graphics, slotBounds, slotText);
@@ -807,20 +730,6 @@ namespace SemiEquip.UI.WinForms.Controls
                 checkPen.EndCap = LineCap.Round;
                 graphics.DrawLine(checkPen, left, middleY, middleX, bottom);
                 graphics.DrawLine(checkPen, middleX, bottom, right, top);
-            }
-        }
-
-        private string ResolveSlotDisplayText(FoupSlotInfo slot)
-        {
-            switch (_slotTextDisplayMode)
-            {
-                case FoupSlotTextDisplayMode.WaferId:
-                    return slot.WaferId;
-                case FoupSlotTextDisplayMode.SlotData:
-                    return slot.SlotData;
-                case FoupSlotTextDisplayMode.None:
-                default:
-                    return string.Empty;
             }
         }
 
@@ -1021,7 +930,7 @@ namespace SemiEquip.UI.WinForms.Controls
 
         private void UpdateSlotToolTip(Point location)
         {
-            if (!_showSlotToolTip || (!_showSlotNumberInToolTip && !_showWaferIdInToolTip))
+            if (!_showSlotTip)
             {
                 ResetSlotToolTip();
                 return;
@@ -1057,20 +966,7 @@ namespace SemiEquip.UI.WinForms.Controls
 
         private string CreateSlotToolTipText(int slotNumber)
         {
-            string slotNumberText = _showSlotNumberInToolTip
-                ? string.Format("Slot {0:00}", slotNumber)
-                : string.Empty;
-            string waferId = GetWaferId(slotNumber);
-            string waferIdText = _showWaferIdInToolTip && !string.IsNullOrEmpty(waferId)
-                ? string.Format("WaferID: {0}", waferId)
-                : string.Empty;
-
-            if (!string.IsNullOrEmpty(slotNumberText) && !string.IsNullOrEmpty(waferIdText))
-            {
-                return slotNumberText + "\r\n" + waferIdText;
-            }
-
-            return !string.IsNullOrEmpty(slotNumberText) ? slotNumberText : waferIdText;
+            return GetSlotTipText(slotNumber);
         }
 
         private void ResetSlotToolTip()

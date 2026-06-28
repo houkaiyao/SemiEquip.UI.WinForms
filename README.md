@@ -2,13 +2,14 @@
 
 面向半导体自动化设备软件的 WinForms 自定义控件库。
 
-项目目标为 **C# / .NET Framework 4.0+ / WinForms**，当前仅保留 `FoupMapControl`、`FourColorLightControl` 两个控件。控件说明、属性和使用实例统一维护在本文档中。
+项目目标为 **C# / .NET Framework 4.0+ / WinForms**，当前保留 `FoupMapControl`、`FourColorLightControl`、`ActionSensorButtonControl` 三个控件。控件说明、属性和使用实例统一维护在本文档中。
 
 ## 项目结构
 
 - `src/SemiEquip.UI.WinForms`：可复用自定义控件库。
 - `src/SemiEquip.UI.WinForms/Controls/FoupMap`：FOUP Map 控件及其辅助类型。
 - `src/SemiEquip.UI.WinForms/Controls/FourColorLight`：四色灯控件。
+- `src/SemiEquip.UI.WinForms/Controls/ActionSensorButton`：动作传感器按钮控件。
 - `samples/SemiEquip.UI.WinForms.Demo`：WinForms Demo 示例程序。
 - `tests/SemiEquip.UI.WinForms.Tests`：兼容 `net40` 的自动化验证程序。
 
@@ -161,6 +162,98 @@ foupMap.SlotClick += delegate(object sender, FoupSlotClickEventArgs e)
 };
 ```
 
+## ActionSensorButtonControl
+
+`ActionSensorButtonControl` 是一个左侧带状态灯的 Button 控件，用于同时显示 PLC 动作 BOOL 状态和 0/1/2 个 IO Sensor 状态，适合气缸、夹爪、挡停、门锁、轴定位等设备动作点位。
+
+控件不绑定固定业务颜色。动作状态、传感器状态、边框和阴影均通过属性配置，Demo 中的颜色只作为预览示例。
+
+### 核心行为
+
+- 按钮主体显示 `ButtonText`。
+- 按钮底色通过 `CommandState` 和配置颜色表达 PLC 动作 BOOL。
+- 左侧按 `SensorMode` 显示 0、1 或 2 个传感器状态灯。
+- 状态灯固定上下排列；单灯时垂直居中。
+- 状态灯形状、左边距、与文字距离和按钮圆角均可配置。
+- 控件继承 `Control` 并复用标准 `Click` 事件，第一版不区分点击区域。
+- 控件支持缩放绘制，小尺寸下文字使用省略和自动缩小避免明显重叠。
+
+### 属性
+
+| 属性 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `ButtonText` | `string` | `Action` | 顶部动作名称。 |
+| `CommandState` | `bool` | `false` | PLC 动作 BOOL 状态。 |
+| `SensorMode` | `SensorDisplayMode` | `Two` | 传感器显示模式：`None`、`One`、`Two`。 |
+| `Sensor1State` / `Sensor2State` | `bool` | `false` | 两个传感器状态。 |
+| `CommandOnBackColor` / `CommandOffBackColor` | `Color` | 示例色 | 动作 True / False 的主体背景色。 |
+| `HoverBackColor` | `Color` | 示例色 | 鼠标悬浮且动作为 False 时的背景色。 |
+| `PressedBackColor` | `Color` | 示例色 | 鼠标按下且动作为 False 时的背景色。 |
+| `DefaultBack` | `Color` | 示例色 | `CommandOffBackColor` 的兼容别名，贴近 `AntdUI.Button` 命名。 |
+| `BackHover` | `Color` | 示例色 | `HoverBackColor` 的兼容别名，贴近 `AntdUI.Button` 命名。 |
+| `BackActive` | `Color` | 示例色 | `PressedBackColor` 的兼容别名，贴近 `AntdUI.Button` 命名。 |
+| `CommandOnForeColor` / `CommandOffForeColor` | `Color` | `White` | 动作 True / False 的主体文字色。 |
+| `ForeHover` | `Color` | `White` | 鼠标悬浮且动作为 False 时的文字色，贴近 `AntdUI.Button` 命名。 |
+| `SensorOnColor` / `SensorOffColor` | `Color` | 示例色 | 传感器 True / False 的指示颜色。 |
+| `SensorBorderColor` | `Color` | 示例色 | 传感器边框颜色。 |
+| `BorderColor` | `Color` | 示例色 | 控件外框颜色。 |
+| `CornerRadius` | `int` | `8` | 控件圆角半径。 |
+| `Radius` | `int` | `8` | `CornerRadius` 的兼容别名，贴近 `AntdUI.Button` 命名。 |
+| `SensorLeftPadding` | `int` | `10` | 状态灯距离按钮左边界的距离。 |
+| `SensorTextSpacing` | `int` | `8` | 状态灯右侧到按钮文字区域的距离。 |
+| `SensorShape` | `SensorIndicatorShape` | `Rectangle` | 传感器形状：`Circle`、`Rectangle`、`RoundedRectangle`。 |
+| `Shadow` | `int` | `0` | 阴影大小，默认不绘制阴影。 |
+| `ShadowColor` | `Color` | `Black` | 阴影颜色。 |
+| `ShadowOffsetX` / `ShadowOffsetY` | `int` | `0` / `1` | 阴影偏移。 |
+| `ShadowOpacity` | `float` | `0.18` | 阴影透明度，范围为 0 到 1。 |
+
+### 基本示例
+
+```csharp
+var actionButton = new ActionSensorButtonControl();
+actionButton.Location = new Point(32, 32);
+actionButton.Size = new Size(180, 58);
+actionButton.ButtonText = "顶升气缸";
+actionButton.CommandState = plcLiftCommand;
+actionButton.SensorMode = SensorDisplayMode.Two;
+actionButton.Sensor1State = ioLiftUpSensor;
+actionButton.Sensor2State = ioLiftDownSensor;
+
+actionButton.CommandOnBackColor = Color.FromArgb(226, 64, 64);      // CommandState = true
+actionButton.DefaultBack = Color.FromArgb(225, 236, 251);           // 默认底色
+actionButton.BackHover = Color.FromArgb(43, 125, 211);              // 鼠标悬浮
+actionButton.BackActive = Color.FromArgb(32, 104, 184);             // 鼠标按下 / CommandState = true
+actionButton.CommandOnForeColor = Color.White;
+actionButton.CommandOffForeColor = Color.Black;
+actionButton.ForeHover = Color.White;
+actionButton.SensorOnColor = Color.FromArgb(40, 112, 210);
+actionButton.SensorOffColor = Color.White;
+actionButton.SensorBorderColor = Color.FromArgb(40, 112, 210);
+actionButton.Radius = 8;
+actionButton.SensorShape = SensorIndicatorShape.Rectangle;
+actionButton.SensorLeftPadding = 10;
+actionButton.SensorTextSpacing = 8;
+actionButton.Shadow = 4;
+actionButton.ShadowOffsetY = 1;
+actionButton.ShadowOpacity = 0.18f;
+
+actionButton.Click += delegate
+{
+    // 在业务代码中下发 PLC 动作或打开操作确认。
+};
+
+Controls.Add(actionButton);
+```
+
+### 单传感器示例
+
+```csharp
+var axisButton = new ActionSensorButtonControl();
+axisButton.ButtonText = "X 轴定位";
+axisButton.SensorMode = SensorDisplayMode.One;
+axisButton.SensorShape = SensorIndicatorShape.RoundedRectangle;
+```
+
 ## FourColorLightControl
 
 `FourColorLightControl` 用于绘制竖向四色灯，从上到下依次为红、黄、绿、蓝四个相连灯段。控件适合设备运行、等待、报警、人工介入等状态提示。
@@ -245,4 +338,4 @@ dotnet build SemiEquip.UI.WinForms.sln -c Release
 .\tests\SemiEquip.UI.WinForms.Tests\bin\Release\net40\SemiEquip.UI.WinForms.Tests.exe
 ```
 
-当前验证覆盖 `FoupMapControl` 的 `SlotCount` 锁定、只读 Slots、`ChooseMapData`、`SlotText` 与 `SlotTipText` 等核心行为；`FourColorLightControl` 通过解决方案构建覆盖编译验证。
+当前验证覆盖 `FoupMapControl` 的 `SlotCount` 锁定、只读 Slots、`ChooseMapData`、`SlotText` 与 `SlotTipText` 等核心行为；覆盖 `ActionSensorButtonControl` 的基础属性、颜色配置和绘制路径；`FourColorLightControl` 通过解决方案构建覆盖编译验证。

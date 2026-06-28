@@ -18,7 +18,8 @@ namespace SemiEquip.UI.WinForms.Demo
         {
             Text = "SemiEquip.UI.WinForms Demo";
             StartPosition = FormStartPosition.CenterScreen;
-            MinimumSize = new Size(1000, 1000);
+            Size = new Size(1600, 1000);
+            MinimumSize = new Size(1200, 800);
             Font = new Font("Times New Roman", 9f, FontStyle.Regular, GraphicsUnit.Point);
             BackColor = Color.FromArgb(230, 235, 242);
             ForeColor = Color.FromArgb(32, 38, 46);
@@ -70,6 +71,7 @@ namespace SemiEquip.UI.WinForms.Demo
         {
             _demoPages.Add(new DemoPageInfo("FOUP Map 控件", delegate { return new FoupMapDemoPage(); }));
             _demoPages.Add(new DemoPageInfo("四色灯控件", delegate { return new FourColorLightDemoPage(); }));
+            _demoPages.Add(new DemoPageInfo("动作传感器按钮控件", delegate { return new ActionSensorButtonDemoPage(); }));
         }
 
         private void LoadDemoSelectorItems()

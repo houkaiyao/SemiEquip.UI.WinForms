@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>SemiEquip.UI.WinForms</id>
+    <version>1.0.0</version>
+    <authors>侯凯尧</authors>
+    <owners>侯凯尧</owners>
+    <description>面向半导体设备软件的 WinForms 工业控件库。</description>
+    <readme>README.md</readme>
+    <releaseNotes>首次发布。</releaseNotes>
+    <copyright>Copyright © 2026</copyright>
+    <tags>WinForms Semiconductor Equipment UI Controls net40</tags>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <dependencies>
+      <group targetFramework=".NETFramework4.0" />
+    </dependencies>
+  </metadata>
+
+  <files>
+    <file src="src\SemiEquip.UI.WinForms\bin\Release\net40\SemiEquip.UI.WinForms.dll" target="lib\net40" />
+    <file src="src\SemiEquip.UI.WinForms\bin\Release\net40\SemiEquip.UI.WinForms.xml" target="lib\net40" />
+    <file src="README.md" target="" />
+  </files>
+</package>

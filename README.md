@@ -2,12 +2,13 @@
 
 面向半导体自动化设备软件的 WinForms 自定义控件库。
 
-项目目标为 **C# / .NET Framework 4.0+ / WinForms**，当前保留 `FoupMapControl`、`FourColorLightControl`、`ActionSensorButtonControl` 三个控件。控件说明、属性和使用实例统一维护在本文档中。
+项目目标为 **C# / .NET Framework 4.0+ / WinForms**，当前保留 `FoupMapControl`、`WaferControl`、`FourColorLightControl`、`ActionSensorButtonControl` 四个控件。控件说明、属性和使用实例统一维护在本文档中。
 
 ## 项目结构
 
 - `src/SemiEquip.UI.WinForms`：可复用自定义控件库。
 - `src/SemiEquip.UI.WinForms/Controls/FoupMap`：FOUP Map 控件及其辅助类型。
+- `src/SemiEquip.UI.WinForms/Controls/Wafer`：单片 Wafer 状态控件。
 - `src/SemiEquip.UI.WinForms/Controls/FourColorLight`：四色灯控件。
 - `src/SemiEquip.UI.WinForms/Controls/ActionSensorButton`：动作传感器按钮控件。
 - `samples/SemiEquip.UI.WinForms.Demo`：WinForms Demo 示例程序。
@@ -37,6 +38,7 @@ using SemiEquip.UI.WinForms.Controls;
 - Slot 内文字字体可通过 `SlotTextFont` 设置；默认 `AutoScaleSlotTextFont = true`，空间不足时自动缩小。
 - 默认字体为 `Times New Roman`。
 - 默认不填充控件底色，背景跟随父容器。
+- 默认不绘制控件外边框，仅绘制 Slot 自身边框。
 - 左侧 Slot 编号默认黑色显示。
 
 ### Slot 状态
@@ -44,9 +46,10 @@ using SemiEquip.UI.WinForms.Controls;
 | 枚举值 | 默认颜色 | 含义 |
 | --- | --- | --- |
 | `FoupSlotState.Empty` | White | 无片 / 空槽 |
-| `FoupSlotState.BeforeProcess` | Blue | 制程前 / 待加工 |
-| `FoupSlotState.AfterProcess` | Green | 制程后 / 已完成 |
-| `FoupSlotState.Abnormal` | Red | 异常 / 需要关注 |
+| `FoupSlotState.BeforeProcess` | DeepBlue | 制程前 / 待加工 |
+| `FoupSlotState.Processing` | LightGreen | 制程中 |
+| `FoupSlotState.AfterProcess` | DarkGreen | 制成后 / 已完成 |
+| `FoupSlotState.Abnormal` | DeepRed | 异常 / 需要关注 |
 | `FoupSlotState.Custom` | 自定义颜色 | 由 `SetSlotColor` 指定 |
 
 ### 主要属性
@@ -64,12 +67,13 @@ using SemiEquip.UI.WinForms.Controls;
 | `SlotTextPadding` | `int` | `4` | Slot 内文字与 Slot 边缘的间距。 |
 | `SlotTextFont` | `Font` | `Times New Roman 7pt` | Slot 内文字基准字体。 |
 | `ContentPadding` | `int` | `8` | 控件内容区域边距。 |
-| `AbnormalSlotColor` | `Color` | Red | 异常状态颜色。 |
-| `BeforeProcessSlotColor` | `Color` | Blue | 制程前状态颜色。 |
-| `AfterProcessSlotColor` | `Color` | Green | 制程后状态颜色。 |
+| `AbnormalSlotColor` | `Color` | DeepRed | 异常状态颜色。 |
+| `BeforeProcessSlotColor` | `Color` | DeepBlue | 制程前状态颜色。 |
+| `ProcessingSlotColor` | `Color` | LightGreen | 制程中状态颜色。 |
+| `AfterProcessSlotColor` | `Color` | DarkGreen | 制成后状态颜色。 |
 | `EmptySlotColor` | `Color` | White | 空槽状态颜色。 |
 | `SlotBorderColor` | `Color` | Gray | Slot 边框颜色。 |
-| `FrameColor` | `Color` | LightGray | 控件外框颜色。 |
+| `FrameColor` | `Color` | LightGray | 兼容保留属性；当前默认不绘制控件外框。 |
 | `SlotNumberColor` | `Color` | Black | 左侧 Slot 编号文字颜色。 |
 | `SlotTextColor` | `Color` | Dark | Slot 内文字颜色。 |
 
@@ -114,9 +118,10 @@ foupMap.ShowSlotTip = true;
 
 foupMap.SetSlotState(1, FoupSlotState.Empty);
 foupMap.SetSlotState(2, FoupSlotState.BeforeProcess);
-foupMap.SetSlotState(3, FoupSlotState.AfterProcess);
-foupMap.SetSlotState(4, FoupSlotState.Abnormal);
-foupMap.SetSlotColor(5, Color.Gold);
+foupMap.SetSlotState(3, FoupSlotState.Processing);
+foupMap.SetSlotState(4, FoupSlotState.AfterProcess);
+foupMap.SetSlotState(5, FoupSlotState.Abnormal);
+foupMap.SetSlotColor(6, Color.Gold);
 foupMap.SetSlotText(2, "S02");
 foupMap.SetSlotTipText(2, "Slot 02 当前为制程前状态。");
 foupMap.SetSlotSelected(25, true);
@@ -160,6 +165,52 @@ foupMap.SlotClick += delegate(object sender, FoupSlotClickEventArgs e)
     string slotText = foupMap.GetSlotText(slotNumber);
     string slotTipText = foupMap.GetSlotTipText(slotNumber);
 };
+```
+
+## WaferControl
+
+`WaferControl` 用于绘制单片 Wafer，通过颜色表达无料、制程中、制成结束三种状态。控件适合在设备腔体、机械手取放片点位、对位台等界面位置显示单片晶圆状态。
+
+### 核心行为
+
+- 控件绘制一个居中的圆形 Wafer。
+- 使用抗锯齿和 45 度线性渐变，保留浅色高光与深色阴影质感。
+- 控件宽高可自由设置，Wafer 会按可用区域自动取较小边居中绘制。
+- `ContentPadding` 小于 0 时按 0 处理。
+- `BorderWidth` 小于 1 时按 1 处理。
+- 默认背景透明，Wafer 以外区域显示父容器背景。
+
+### Wafer 状态
+
+| 枚举值 | 默认颜色 | 含义 |
+| --- | --- | --- |
+| `WaferState.Empty` | White | 无料 |
+| `WaferState.Processing` | Blue | 制程中 |
+| `WaferState.Completed` | Green | 制成结束 / 已完成 |
+
+### 主要属性
+
+| 属性 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `State` | `WaferState` | `Empty` | 当前 Wafer 状态。 |
+| `ContentPadding` | `int` | `8` | 控件内容区域边距。 |
+| `BorderWidth` | `int` | `2` | Wafer 外圈边框宽度。 |
+| `EmptyWaferColor` | `Color` | White | 无料状态颜色。 |
+| `ProcessingWaferColor` | `Color` | Blue | 制程中状态颜色。 |
+| `CompletedWaferColor` | `Color` | Green | 制成结束状态颜色。 |
+| `BorderColor` | `Color` | Gray | Wafer 外圈边框颜色。 |
+
+### 基本示例
+
+```csharp
+var wafer = new WaferControl();
+wafer.Location = new Point(32, 32);
+wafer.Size = new Size(120, 120);
+wafer.State = WaferState.Processing;
+wafer.ContentPadding = 8;
+wafer.BorderWidth = 2;
+
+Controls.Add(wafer);
 ```
 
 ## ActionSensorButtonControl
@@ -338,4 +389,4 @@ dotnet build SemiEquip.UI.WinForms.sln -c Release
 .\tests\SemiEquip.UI.WinForms.Tests\bin\Release\net40\SemiEquip.UI.WinForms.Tests.exe
 ```
 
-当前验证覆盖 `FoupMapControl` 的运行时 `SlotCount` 调整、只读 Slots、`ChooseMapData`、`SlotText` 与 `SlotTipText` 等核心行为；覆盖 `ActionSensorButtonControl` 的基础属性、颜色配置和绘制路径；`FourColorLightControl` 通过解决方案构建覆盖编译验证。
+当前验证覆盖 `FoupMapControl` 的运行时 `SlotCount` 调整、只读 Slots、`ChooseMapData`、`SlotText` 与 `SlotTipText` 等核心行为；覆盖 `WaferControl` 的基础属性、状态颜色和绘制路径；覆盖 `ActionSensorButtonControl` 的基础属性、颜色配置和绘制路径；`FourColorLightControl` 通过解决方案构建覆盖编译验证。

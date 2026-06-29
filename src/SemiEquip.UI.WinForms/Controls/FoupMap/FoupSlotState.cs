@@ -4,8 +4,9 @@ namespace SemiEquip.UI.WinForms.Controls
     {
         Empty = 0,
         BeforeProcess = 1,
-        AfterProcess = 2,
-        Abnormal = 3,
-        Custom = 4
+        Processing = 2,
+        AfterProcess = 3,
+        Abnormal = 4,
+        Custom = 5
     }
 }

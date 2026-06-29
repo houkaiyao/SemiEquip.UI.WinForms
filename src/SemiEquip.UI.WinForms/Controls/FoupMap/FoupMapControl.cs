@@ -17,6 +17,7 @@ namespace SemiEquip.UI.WinForms.Controls
         public const int MaxSlotCount = 25;
 
         private const int DefaultWidth = 150;
+        private const int SelectionCheckBoxGap = 2;
 
         private readonly FoupSlotCollection _slots;
         private int _slotCount = MaxSlotCount;
@@ -35,9 +36,10 @@ namespace SemiEquip.UI.WinForms.Controls
         private Color _slotNumberColor = Color.Black;
         private Color _slotTextColor = Color.FromArgb(18, 22, 28);
         private Color _emptySlotColor = Color.White;
-        private Color _beforeProcessSlotColor = Color.FromArgb(55, 137, 255);
-        private Color _afterProcessSlotColor = Color.FromArgb(46, 184, 92);
-        private Color _abnormalSlotColor = Color.FromArgb(226, 64, 64);
+        private Color _beforeProcessSlotColor = Color.FromArgb(40, 112, 210);
+        private Color _processingSlotColor = Color.FromArgb(132, 220, 170);
+        private Color _afterProcessSlotColor = Color.FromArgb(20, 132, 72);
+        private Color _abnormalSlotColor = Color.FromArgb(190, 40, 40);
         private Font _slotTextFont;
 
         public FoupMapControl()
@@ -335,7 +337,19 @@ namespace SemiEquip.UI.WinForms.Controls
         }
 
         [Category("FOUP Colors")]
-        [Description("制程后 Slot 使用的颜色。")]
+        [Description("制程中 Slot 使用的颜色。")]
+        public Color ProcessingSlotColor
+        {
+            get { return _processingSlotColor; }
+            set
+            {
+                _processingSlotColor = value;
+                ApplyStateColor(FoupSlotState.Processing, value);
+            }
+        }
+
+        [Category("FOUP Colors")]
+        [Description("制成后 Slot 使用的颜色。")]
         public Color AfterProcessSlotColor
         {
             get { return _afterProcessSlotColor; }
@@ -547,8 +561,6 @@ namespace SemiEquip.UI.WinForms.Controls
             graphics.SmoothingMode = SmoothingMode.AntiAlias;
             graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-            DrawFrame(graphics);
-
             for (int slotNumber = 1; slotNumber <= _slotCount; slotNumber++)
             {
                 DrawSlot(graphics, slotNumber);
@@ -618,18 +630,6 @@ namespace SemiEquip.UI.WinForms.Controls
             if (handler != null)
             {
                 handler(this, e);
-            }
-        }
-
-        private void DrawFrame(Graphics graphics)
-        {
-            Rectangle frameBounds = ClientRectangle;
-            frameBounds.Width -= 1;
-            frameBounds.Height -= 1;
-
-            using (Pen pen = new Pen(_frameColor))
-            {
-                graphics.DrawRectangle(pen, frameBounds);
             }
         }
 
@@ -760,21 +760,21 @@ namespace SemiEquip.UI.WinForms.Controls
         private Rectangle CalculateSlotBounds(int slotNumber)
         {
             Rectangle contentBounds = GetContentBounds();
-            int leftAreaWidth = CalculateSideAreaWidth(contentBounds.Width);
+            int slotHeight = CalculateSlotHeight(contentBounds, slotNumber);
+            int leftAreaWidth = CalculateSideAreaWidth(contentBounds.Width, slotHeight);
             int slotAreaWidth = CalculateSlotAreaWidth(contentBounds.Width, leftAreaWidth);
             int slotAreaX = contentBounds.X + leftAreaWidth;
 
             int slotIndexFromTop = _slotCount - slotNumber;
-            int slotTop = contentBounds.Top + slotIndexFromTop * contentBounds.Height / _slotCount;
-            int slotBottom = contentBounds.Top + (slotIndexFromTop + 1) * contentBounds.Height / _slotCount;
+            int slotTop = contentBounds.Top + slotIndexFromTop * slotHeight;
 
-            return new Rectangle(slotAreaX, slotTop, slotAreaWidth, Math.Max(1, slotBottom - slotTop));
+            return new Rectangle(slotAreaX, slotTop, slotAreaWidth, slotHeight);
         }
 
         private Rectangle CalculateSlotNumberBounds(Rectangle slotBounds)
         {
             Rectangle contentBounds = GetContentBounds();
-            int leftAreaWidth = CalculateSideAreaWidth(contentBounds.Width);
+            int leftAreaWidth = CalculateSideAreaWidth(contentBounds.Width, slotBounds.Height);
 
             return new Rectangle(
                 contentBounds.X,
@@ -787,8 +787,8 @@ namespace SemiEquip.UI.WinForms.Controls
         {
             Rectangle slotBounds = CalculateSlotBounds(slotNumber);
             Rectangle contentBounds = GetContentBounds();
-            int rightAreaWidth = CalculateSideAreaWidth(contentBounds.Width);
-            int checkBoxSize = Math.Min(slotBounds.Height - 2, rightAreaWidth - 4);
+            int rightAreaWidth = CalculateSideAreaWidth(contentBounds.Width, slotBounds.Height);
+            int checkBoxSize = CalculateSelectionCheckBoxSize(slotBounds.Height);
 
             if (checkBoxSize <= 0)
             {
@@ -802,9 +802,20 @@ namespace SemiEquip.UI.WinForms.Controls
                 checkBoxSize);
         }
 
-        private static int CalculateSideAreaWidth(int contentWidth)
+        private static int CalculateSelectionCheckBoxSize(int slotHeight)
         {
-            return Math.Max(0, contentWidth / 10);
+            return Math.Max(1, slotHeight * 8 / 10);
+        }
+
+        private int CalculateSlotHeight(Rectangle contentBounds, int slotNumber)
+        {
+            return Math.Max(1, contentBounds.Height / _slotCount);
+        }
+
+        private int CalculateSideAreaWidth(int contentWidth, int slotHeight)
+        {
+            int sideAreaWidth = Math.Max(0, contentWidth / 10);
+            return Math.Max(sideAreaWidth, CalculateSelectionCheckBoxSize(slotHeight) + SelectionCheckBoxGap * 2);
         }
 
         private static int CalculateSlotAreaWidth(int contentWidth, int sideAreaWidth)
@@ -1011,7 +1022,7 @@ namespace SemiEquip.UI.WinForms.Controls
         {
             Rectangle slotBounds = CalculateSlotBounds(slotNumber);
             Rectangle contentBounds = GetContentBounds();
-            int rightAreaWidth = CalculateSideAreaWidth(contentBounds.Width);
+            int rightAreaWidth = CalculateSideAreaWidth(contentBounds.Width, slotBounds.Height);
             int markSize = Math.Max(1, Math.Min(3, slotBounds.Height));
             int x = slotBounds.Right + Math.Max(0, (rightAreaWidth - markSize) / 2);
             int y = slotBounds.Top + Math.Max(0, (slotBounds.Height - markSize) / 2);
@@ -1045,6 +1056,8 @@ namespace SemiEquip.UI.WinForms.Controls
                     return _abnormalSlotColor;
                 case FoupSlotState.BeforeProcess:
                     return _beforeProcessSlotColor;
+                case FoupSlotState.Processing:
+                    return _processingSlotColor;
                 case FoupSlotState.AfterProcess:
                     return _afterProcessSlotColor;
                 case FoupSlotState.Empty:

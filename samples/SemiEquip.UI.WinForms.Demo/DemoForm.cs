@@ -70,6 +70,7 @@ namespace SemiEquip.UI.WinForms.Demo
         private void RegisterDemoPages()
         {
             _demoPages.Add(new DemoPageInfo("FOUP Map 控件", delegate { return new FoupMapDemoPage(); }));
+            _demoPages.Add(new DemoPageInfo("Wafer 控件", delegate { return new WaferDemoPage(); }));
             _demoPages.Add(new DemoPageInfo("四色灯控件", delegate { return new FourColorLightDemoPage(); }));
             _demoPages.Add(new DemoPageInfo("动作传感器按钮控件", delegate { return new ActionSensorButtonDemoPage(); }));
         }

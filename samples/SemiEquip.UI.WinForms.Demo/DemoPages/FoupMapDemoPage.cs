@@ -179,13 +179,17 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
                 _foupMap.SetSlotText(slot, string.Format("S{0:00}", slot));
                 _foupMap.SetSlotTipText(slot, string.Format("Slot {0:00} 示例提示文本", slot));
 
-                if (slot % 9 == 0)
+                if (slot % 11 == 0)
                 {
                     _foupMap.SetSlotState(slot, FoupSlotState.Abnormal);
                 }
-                else if (slot % 4 == 0)
+                else if (slot % 5 == 0)
                 {
                     _foupMap.SetSlotState(slot, FoupSlotState.AfterProcess);
+                }
+                else if (slot % 4 == 0)
+                {
+                    _foupMap.SetSlotState(slot, FoupSlotState.Processing);
                 }
                 else if (slot % 3 == 0)
                 {
@@ -231,6 +235,8 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
                 case FoupSlotState.Empty:
                     return FoupSlotState.BeforeProcess;
                 case FoupSlotState.BeforeProcess:
+                    return FoupSlotState.Processing;
+                case FoupSlotState.Processing:
                     return FoupSlotState.AfterProcess;
                 case FoupSlotState.AfterProcess:
                     return FoupSlotState.Abnormal;
@@ -272,6 +278,11 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
             }
 
             if (state == 800)
+            {
+                return FoupSlotState.Processing;
+            }
+
+            if (state == 700)
             {
                 return FoupSlotState.AfterProcess;
             }

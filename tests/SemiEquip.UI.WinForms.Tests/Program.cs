@@ -15,7 +15,7 @@ namespace SemiEquip.UI.WinForms.Tests
             try
             {
                 Run("FoupMap 创建前可设置 SlotCount", TestInitialSlotCount);
-                Run("FoupMap 创建后锁定 SlotCount", TestLockedSlotCount);
+                Run("FoupMap 创建后可设置 SlotCount", TestRuntimeSlotCount);
                 Run("FoupMap Slots 为只读集合", TestReadOnlySlots);
                 Run("FoupMap ChooseMapData 映射", TestChooseMapData);
                 Run("FoupMap SlotText 与 SlotTipText", TestSlotTextData);
@@ -41,13 +41,16 @@ namespace SemiEquip.UI.WinForms.Tests
             }
         }
 
-        private static void TestLockedSlotCount()
+        private static void TestRuntimeSlotCount()
         {
             using (FoupMapControl control = new FoupMapControl())
             {
                 IntPtr handle = control.Handle;
-                AssertThrows<InvalidOperationException>(delegate { control.SlotCount = 20; });
-                AssertEqual(FoupMapControl.MaxSlotCount, control.SlotCount, "锁定后的 SlotCount");
+                control.SlotCount = 20;
+
+                AssertEqual(20, control.SlotCount, "Handle 创建后的 SlotCount");
+                AssertEqual(20, control.Slots.Count, "Handle 创建后的 Slots.Count");
+                AssertEqual("00000000000000000000", control.ChooseMapData, "Handle 创建后的 ChooseMapData");
             }
         }
 

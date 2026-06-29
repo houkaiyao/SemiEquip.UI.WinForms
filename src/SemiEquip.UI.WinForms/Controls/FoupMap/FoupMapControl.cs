@@ -72,7 +72,7 @@ namespace SemiEquip.UI.WinForms.Controls
         }
 
         [Category("FOUP Map")]
-        [Description("需要绘制的 FOUP Slot 数量，有效范围为 1 到 25。运行时控件 Handle 创建后不允许修改。")]
+        [Description("需要绘制的 FOUP Slot 数量，有效范围为 1 到 25。")]
         [DefaultValue(MaxSlotCount)]
         public int SlotCount
         {
@@ -85,13 +85,13 @@ namespace SemiEquip.UI.WinForms.Controls
                     return;
                 }
 
-                if (IsHandleCreated && !IsInDesignMode())
-                {
-                    throw new InvalidOperationException("SlotCount 只能在控件创建 Handle 前设置。");
-                }
-
                 _slotCount = normalized;
                 ResetSlots();
+                if (_hoverSlotNumber > _slotCount)
+                {
+                    ResetSlotToolTip();
+                }
+
                 Invalidate();
                 OnChooseMapDataChanged(EventArgs.Empty);
             }

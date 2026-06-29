@@ -28,7 +28,7 @@ using SemiEquip.UI.WinForms.Controls;
 ### 核心行为
 
 - 最大 Slot 数量为 `25`。
-- `SlotCount` 范围为 `1` 到 `25`；控件 Handle 创建后不允许修改。
+- `SlotCount` 范围为 `1` 到 `25`；运行时可调整，调整后会按新的槽位数量重建 Slot 数据。
 - 控件宽高可自由设置，内部 Slot 会按可用空间自动布局。
 - 扣除 `ContentPadding` 后，横向区域按 Slot 编号、Slot 主体、选片勾选框约 `1:8:1` 分配。
 - Slot 高度按可用内容总高度除以 `SlotCount` 计算。
@@ -53,7 +53,7 @@ using SemiEquip.UI.WinForms.Controls;
 
 | 属性 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `SlotCount` | `int` | `25` | 实际绘制的 Slot 数量，Handle 创建后不可修改。 |
+| `SlotCount` | `int` | `25` | 实际绘制的 Slot 数量，运行时可调整。 |
 | `ShowSlotNumbers` | `bool` | `false` | 是否在左侧直接绘制 Slot 编号。 |
 | `ShowSelectionCheckBoxes` | `bool` | `false` | 是否在右侧显示选片勾选框。 |
 | `ChooseMapData` | `string` | 空字符串 | 按 Slot 编号顺序映射选片结果，Slot 1 对应第 1 位。 |
@@ -338,4 +338,4 @@ dotnet build SemiEquip.UI.WinForms.sln -c Release
 .\tests\SemiEquip.UI.WinForms.Tests\bin\Release\net40\SemiEquip.UI.WinForms.Tests.exe
 ```
 
-当前验证覆盖 `FoupMapControl` 的 `SlotCount` 锁定、只读 Slots、`ChooseMapData`、`SlotText` 与 `SlotTipText` 等核心行为；覆盖 `ActionSensorButtonControl` 的基础属性、颜色配置和绘制路径；`FourColorLightControl` 通过解决方案构建覆盖编译验证。
+当前验证覆盖 `FoupMapControl` 的运行时 `SlotCount` 调整、只读 Slots、`ChooseMapData`、`SlotText` 与 `SlotTipText` 等核心行为；覆盖 `ActionSensorButtonControl` 的基础属性、颜色配置和绘制路径；`FourColorLightControl` 通过解决方案构建覆盖编译验证。

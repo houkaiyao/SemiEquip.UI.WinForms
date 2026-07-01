@@ -73,6 +73,7 @@ namespace SemiEquip.UI.WinForms.Demo
             _demoPages.Add(new DemoPageInfo("Wafer 控件", delegate { return new WaferDemoPage(); }));
             _demoPages.Add(new DemoPageInfo("四色灯控件", delegate { return new FourColorLightDemoPage(); }));
             _demoPages.Add(new DemoPageInfo("动作传感器按钮控件", delegate { return new ActionSensorButtonDemoPage(); }));
+            _demoPages.Add(new DemoPageInfo("Robot Transfer 控件", delegate { return new RobotTransferDemoPage(); }));
         }
 
         private void LoadDemoSelectorItems()

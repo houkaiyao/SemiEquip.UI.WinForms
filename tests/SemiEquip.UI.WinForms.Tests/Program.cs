@@ -15,6 +15,7 @@ namespace SemiEquip.UI.WinForms.Tests
         {
             try
             {
+                Run("RobotTransfer basic API and drawing", TestRobotTransferControl);
                 Run("FoupMap 创建前可设置 SlotCount", TestInitialSlotCount);
                 Run("FoupMap 创建后可设置 SlotCount", TestRuntimeSlotCount);
                 Run("FoupMap Slots 为只读集合", TestReadOnlySlots);
@@ -245,6 +246,41 @@ namespace SemiEquip.UI.WinForms.Tests
                 AssertEqual(8, control.CornerRadius, "Radius 应映射 CornerRadius");
                 AssertEqual(4, control.Shadow, "Shadow");
                 AssertEqual(1f, control.ShadowOpacity, "ShadowOpacity 应被限制到 1");
+
+                control.DrawToBitmap(bitmap, new Rectangle(0, 0, bitmap.Width, bitmap.Height));
+            }
+        }
+
+        private static void TestRobotTransferControl()
+        {
+            using (RobotTransferControl control = new RobotTransferControl())
+            using (Bitmap bitmap = new Bitmap(420, 420))
+            {
+                control.Size = new Size(420, 420);
+
+                AssertTrue(control.IsReady, "RobotTransfer should be ready by default");
+                AssertTrue(!control.IsBusy, "RobotTransfer should not be busy by default");
+                AssertEqual(0.0, control.BaseAngle, "Default BaseAngle");
+                AssertEqual(0.0, control.TargetBaseAngle, "Default TargetBaseAngle");
+                AssertEqual(138.0, control.PushDistance, "Default PushDistance");
+                AssertEqual(0.82, control.ForkMoveSpeed, "Default ForkMoveSpeed");
+                AssertEqual(120.0, control.BaseRotateSpeed, "Default BaseRotateSpeed");
+
+                control.PushDistance = -1.0;
+                control.ForkMoveSpeed = -1.0;
+                control.BaseRotateSpeed = -1.0;
+                AssertEqual(0.0, control.PushDistance, "PushDistance should clamp to zero");
+                AssertEqual(0.01, control.ForkMoveSpeed, "ForkMoveSpeed should clamp to minimum");
+                AssertEqual(1.0, control.BaseRotateSpeed, "BaseRotateSpeed should clamp to minimum");
+
+                control.PushDistance = 138.0;
+                control.ForkMoveSpeed = 0.82;
+                control.BaseRotateSpeed = 120.0;
+                AssertTrue(control.Start(RobotFork.Fork1, 0.0, RobotTransferAction.None), "Start None should be accepted while ready");
+                AssertEqual(0.0, control.TargetBaseAngle, "TargetBaseAngle after Start None");
+                AssertTrue(control.Extend(RobotFork.Fork1), "Extend should be accepted when base is settled");
+                AssertTrue(!control.Start(RobotFork.Fork2, 90.0, RobotTransferAction.Get), "Start should be rejected while fork target is not settled");
+                AssertTrue(control.Retract(RobotFork.Fork1), "Retract should be accepted for idle fork runtime");
 
                 control.DrawToBitmap(bitmap, new Rectangle(0, 0, bitmap.Width, bitmap.Height));
             }

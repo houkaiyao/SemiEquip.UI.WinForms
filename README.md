@@ -2,7 +2,7 @@
 
 面向半导体自动化设备软件的 WinForms 自定义控件库。
 
-项目目标为 **C# / .NET Framework 4.0+ / WinForms**，当前保留 `FoupMapControl`、`WaferControl`、`FourColorLightControl`、`ActionSensorButtonControl` 四个控件。控件说明、属性和使用实例统一维护在本文档中。
+项目目标为 **C# / .NET Framework 4.0+ / WinForms**，当前保留 `FoupMapControl`、`WaferControl`、`FourColorLightControl`、`ActionSensorButtonControl`、`RobotTransferControl` 五个控件。控件说明、属性和使用实例统一维护在本文档中。
 
 ## 项目结构
 
@@ -11,6 +11,7 @@
 - `src/SemiEquip.UI.WinForms/Controls/Wafer`：单片 Wafer 状态控件。
 - `src/SemiEquip.UI.WinForms/Controls/FourColorLight`：四色灯控件。
 - `src/SemiEquip.UI.WinForms/Controls/ActionSensorButton`：动作传感器按钮控件。
+- `src/SemiEquip.UI.WinForms/Controls/RobotTransfer`：双叉机械手取放片动画控件。
 - `samples/SemiEquip.UI.WinForms.Demo`：WinForms Demo 示例程序。
 - `tests/SemiEquip.UI.WinForms.Tests`：兼容 `net40` 的自动化验证程序。
 
@@ -380,6 +381,77 @@ fourColorLight.LightGap = 2;
 fourColorLight.FrostedLineSpacing = 4;
 ```
 
+## RobotTransferControl
+
+`RobotTransferControl` 用于绘制双叉机械手的旋转、伸出、缩回和取放片动画。控件适合在半导体设备界面中展示 Robot / Transfer 模块的动作状态。
+
+### 核心行为
+
+- 控件绘制机械手底座、两组 ARM1 / ARM2、叉臂和 wafer。
+- `Start` 只在底座角度到位、两组叉臂已缩回且无动作运行时接受新动作。
+- `RobotTransferAction.None` 只旋转底座，不触发 `ActionCompleted`。
+- `RobotTransferAction.Get` 会先旋转到底座目标角度，再伸出指定叉臂，显示 wafer，然后缩回。
+- `RobotTransferAction.Put` 会先旋转到底座目标角度，再带 wafer 伸出指定叉臂，放片后隐藏 wafer，然后缩回。
+- `Extend` / `Retract` 可手动控制指定叉臂伸出或缩回。
+- 默认背景透明，跟随父容器背景。
+- 控件会根据当前宽高自动缩放绘制比例。
+
+### 枚举
+
+| 枚举值 | 说明 |
+| --- | --- |
+| `RobotFork.Fork1` | 第一组叉臂。 |
+| `RobotFork.Fork2` | 第二组叉臂。 |
+| `RobotTransferAction.None` | 仅旋转底座。 |
+| `RobotTransferAction.Get` | 取片动作。 |
+| `RobotTransferAction.Put` | 放片动作。 |
+
+### 属性
+
+| 属性 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `BaseAngle` | `double` | `0` | 机械手底座当前角度，单位为度。 |
+| `TargetBaseAngle` | `double` | `0` | 机械手底座目标角度，单位为度。 |
+| `IsReady` | `bool` | `true` | 机械手是否已空闲、定位完成，并可开始新的取放动作。 |
+| `IsBusy` | `bool` | `false` | 机械手是否正在旋转或移动叉臂。 |
+| `PushDistance` | `double` | `138` | 叉臂伸出距离，使用控件内部模型单位；小于 `0` 时按 `0` 处理。 |
+| `ForkMoveSpeed` | `double` | `0.82` | 叉臂伸出和缩回速度；小于 `0.01` 时按 `0.01` 处理。 |
+| `BaseRotateSpeed` | `double` | `120` | 底座旋转速度，单位为度/秒；小于 `1` 时按 `1` 处理。 |
+| `RobotScale` | `double` | 自动计算 | 当前自动计算得到的绘制缩放比例。 |
+
+### 方法
+
+| 方法 | 说明 |
+| --- | --- |
+| `Start(RobotFork fork, double angle, RobotTransferAction action)` | 启动一次旋转或取放片动作；接受动作时返回 `true`。 |
+| `Extend(RobotFork fork)` | 手动伸出指定叉臂；接受动作时返回 `true`。 |
+| `Retract(RobotFork fork)` | 手动缩回指定叉臂；接受动作时返回 `true`。 |
+
+### 事件
+
+| 事件 | 参数 | 说明 |
+| --- | --- | --- |
+| `ActionCompleted` | `RobotTransferActionCompletedEventArgs` | `Get` 或 `Put` 动作缩回完成后触发，参数包含 `Fork`、`Action` 和 `BaseAngle`。 |
+
+### 基本示例
+
+```csharp
+var robot = new RobotTransferControl();
+robot.Location = new Point(32, 32);
+robot.Size = new Size(420, 420);
+robot.BackColor = Color.Transparent;
+robot.BaseRotateSpeed = 120.0;
+robot.ForkMoveSpeed = 0.82;
+robot.ActionCompleted += delegate(object sender, RobotTransferActionCompletedEventArgs e)
+{
+    // e.Fork、e.Action、e.BaseAngle
+};
+
+Controls.Add(robot);
+
+robot.Start(RobotFork.Fork1, 90.0, RobotTransferAction.Get);
+```
+
 ## 自动化验证
 
 在 `SemiEquip.UI.WinForms` 目录执行：
@@ -389,4 +461,4 @@ dotnet build SemiEquip.UI.WinForms.sln -c Release
 .\tests\SemiEquip.UI.WinForms.Tests\bin\Release\net40\SemiEquip.UI.WinForms.Tests.exe
 ```
 
-当前验证覆盖 `FoupMapControl` 的运行时 `SlotCount` 调整、只读 Slots、`ChooseMapData`、`SlotText` 与 `SlotTipText` 等核心行为；覆盖 `WaferControl` 的基础属性、状态颜色和绘制路径；覆盖 `ActionSensorButtonControl` 的基础属性、颜色配置和绘制路径；`FourColorLightControl` 通过解决方案构建覆盖编译验证。
+当前验证覆盖 `FoupMapControl` 的运行时 `SlotCount` 调整、只读 Slots、`ChooseMapData`、`SlotText` 与 `SlotTipText` 等核心行为；覆盖 `WaferControl` 的基础属性、状态颜色和绘制路径；覆盖 `ActionSensorButtonControl` 的基础属性、颜色配置和绘制路径；覆盖 `RobotTransferControl` 的基础属性、动作入口和绘制路径；`FourColorLightControl` 通过解决方案构建覆盖编译验证。

@@ -64,6 +64,7 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
             GroupBox stateGroup = CreateGroupBox("状态", 0, 56, 390, 190);
             _stateComboBox = CreateComboBox(150, 34, 180);
             _stateComboBox.Items.Add(WaferState.Empty);
+            _stateComboBox.Items.Add(WaferState.BeforeProcess);
             _stateComboBox.Items.Add(WaferState.Processing);
             _stateComboBox.Items.Add(WaferState.Completed);
             _stateComboBox.SelectedItem = WaferState.Empty;
@@ -141,6 +142,9 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
             switch (_wafer.State)
             {
                 case WaferState.Empty:
+                    SetState(WaferState.BeforeProcess);
+                    break;
+                case WaferState.BeforeProcess:
                     SetState(WaferState.Processing);
                     break;
                 case WaferState.Processing:
@@ -156,7 +160,8 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
         private void ApplyDefaultColors()
         {
             _wafer.EmptyWaferColor = Color.White;
-            _wafer.ProcessingWaferColor = Color.FromArgb(55, 137, 255);
+            _wafer.BeforeProcessWaferColor = Color.FromArgb(55, 137, 255);
+            _wafer.ProcessingWaferColor = Color.FromArgb(132, 220, 170);
             _wafer.CompletedWaferColor = Color.FromArgb(46, 184, 92);
             _wafer.BorderColor = Color.FromArgb(80, 104, 132);
             UpdateStatusLabel();
@@ -165,6 +170,7 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
         private void ApplyHighContrastColors()
         {
             _wafer.EmptyWaferColor = Color.FromArgb(245, 247, 250);
+            _wafer.BeforeProcessWaferColor = Color.FromArgb(55, 137, 255);
             _wafer.ProcessingWaferColor = Color.FromArgb(255, 176, 48);
             _wafer.CompletedWaferColor = Color.FromArgb(20, 170, 92);
             _wafer.BorderColor = Color.FromArgb(32, 38, 46);
@@ -174,11 +180,12 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
         private void UpdateStatusLabel()
         {
             _statusLabel.Text = string.Format(
-                "State: {0}\r\nContentPadding: {1}\r\nBorderWidth: {2}\r\nEmptyWaferColor: {3}\r\nProcessingWaferColor: {4}\r\nCompletedWaferColor: {5}",
+                "State: {0}\r\nContentPadding: {1}\r\nBorderWidth: {2}\r\nEmptyWaferColor: {3}\r\nBeforeProcessWaferColor: {4}\r\nProcessingWaferColor: {5}\r\nCompletedWaferColor: {6}",
                 _wafer.State,
                 _wafer.ContentPadding,
                 _wafer.BorderWidth,
                 _wafer.EmptyWaferColor,
+                _wafer.BeforeProcessWaferColor,
                 _wafer.ProcessingWaferColor,
                 _wafer.CompletedWaferColor);
         }

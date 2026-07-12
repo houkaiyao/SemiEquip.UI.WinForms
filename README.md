@@ -170,7 +170,7 @@ foupMap.SlotClick += delegate(object sender, FoupSlotClickEventArgs e)
 
 ## WaferControl
 
-`WaferControl` 用于绘制单片 Wafer，通过颜色表达无料、制程中、制成结束三种状态。控件适合在设备腔体、机械手取放片点位、对位台等界面位置显示单片晶圆状态。
+`WaferControl` 用于绘制单片 Wafer，通过颜色表达无料、制程前、制程中、制成结束四种状态。控件适合在设备腔体、机械手取放片点位、对位台等界面位置显示单片晶圆状态。
 
 ### 核心行为
 
@@ -186,7 +186,8 @@ foupMap.SlotClick += delegate(object sender, FoupSlotClickEventArgs e)
 | 枚举值 | 默认颜色 | 含义 |
 | --- | --- | --- |
 | `WaferState.Empty` | White | 无料 |
-| `WaferState.Processing` | Blue | 制程中 |
+| `WaferState.BeforeProcess` | RGB(55, 137, 255) | 制程前 / 待加工 |
+| `WaferState.Processing` | RGB(132, 220, 170) | 制程中 |
 | `WaferState.Completed` | Green | 制成结束 / 已完成 |
 
 ### 主要属性
@@ -197,7 +198,8 @@ foupMap.SlotClick += delegate(object sender, FoupSlotClickEventArgs e)
 | `ContentPadding` | `int` | `8` | 控件内容区域边距。 |
 | `BorderWidth` | `int` | `2` | Wafer 外圈边框宽度。 |
 | `EmptyWaferColor` | `Color` | White | 无料状态颜色。 |
-| `ProcessingWaferColor` | `Color` | Blue | 制程中状态颜色。 |
+| `BeforeProcessWaferColor` | `Color` | RGB(55, 137, 255) | 制程前状态颜色。 |
+| `ProcessingWaferColor` | `Color` | RGB(132, 220, 170) | 制程中状态颜色。 |
 | `CompletedWaferColor` | `Color` | Green | 制成结束状态颜色。 |
 | `BorderColor` | `Color` | Gray | Wafer 外圈边框颜色。 |
 

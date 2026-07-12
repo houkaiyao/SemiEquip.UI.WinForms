@@ -18,7 +18,8 @@ namespace SemiEquip.UI.WinForms.Controls
         private int _contentPadding = 8;
         private int _borderWidth = 2;
         private Color _emptyWaferColor = Color.White;
-        private Color _processingWaferColor = Color.FromArgb(55, 137, 255);
+        private Color _beforeProcessWaferColor = Color.FromArgb(55, 137, 255);
+        private Color _processingWaferColor = Color.FromArgb(132, 220, 170);
         private Color _completedWaferColor = Color.FromArgb(46, 184, 92);
         private Color _borderColor = Color.FromArgb(80, 104, 132);
 
@@ -97,6 +98,14 @@ namespace SemiEquip.UI.WinForms.Controls
         {
             get { return _emptyWaferColor; }
             set { SetColor(ref _emptyWaferColor, value); }
+        }
+
+        [Category("Wafer Colors")]
+        [Description("制程前状态下的 Wafer 面颜色。")]
+        public Color BeforeProcessWaferColor
+        {
+            get { return _beforeProcessWaferColor; }
+            set { SetColor(ref _beforeProcessWaferColor, value); }
         }
 
         [Category("Wafer Colors")]
@@ -197,6 +206,8 @@ namespace SemiEquip.UI.WinForms.Controls
         {
             switch (_state)
             {
+                case WaferState.BeforeProcess:
+                    return _beforeProcessWaferColor;
                 case WaferState.Processing:
                     return _processingWaferColor;
                 case WaferState.Completed:

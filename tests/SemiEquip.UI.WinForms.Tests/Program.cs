@@ -177,6 +177,15 @@ namespace SemiEquip.UI.WinForms.Tests
                 AssertEqual(WaferState.Empty, control.State, "默认 State");
                 AssertEqual(Color.Transparent, control.BackColor, "默认 BackColor");
 
+                AssertEqual(Color.FromArgb(55, 137, 255), control.BeforeProcessWaferColor, "Default BeforeProcessWaferColor");
+                AssertEqual(Color.FromArgb(132, 220, 170), control.ProcessingWaferColor, "Default ProcessingWaferColor");
+                AssertEqual(1, (int)WaferState.BeforeProcess, "BeforeProcess enum value");
+                AssertEqual(2, (int)WaferState.Processing, "Processing enum value");
+                AssertEqual(3, (int)WaferState.Completed, "Completed enum value");
+
+                control.State = WaferState.BeforeProcess;
+                AssertEqual(WaferState.BeforeProcess, control.State, "BeforeProcess State");
+
                 control.State = WaferState.Processing;
                 AssertEqual(WaferState.Processing, control.State, "Processing State");
 
@@ -189,15 +198,19 @@ namespace SemiEquip.UI.WinForms.Tests
                 AssertEqual(1, control.BorderWidth, "BorderWidth 应被限制到 1");
 
                 control.EmptyWaferColor = Color.GhostWhite;
+                control.BeforeProcessWaferColor = Color.RoyalBlue;
                 control.ProcessingWaferColor = Color.DeepSkyBlue;
                 control.CompletedWaferColor = Color.LimeGreen;
                 control.BorderColor = Color.DarkSlateGray;
                 AssertEqual(Color.GhostWhite, control.EmptyWaferColor, "EmptyWaferColor");
+                AssertEqual(Color.RoyalBlue, control.BeforeProcessWaferColor, "BeforeProcessWaferColor");
                 AssertEqual(Color.DeepSkyBlue, control.ProcessingWaferColor, "ProcessingWaferColor");
                 AssertEqual(Color.LimeGreen, control.CompletedWaferColor, "CompletedWaferColor");
                 AssertEqual(Color.DarkSlateGray, control.BorderColor, "BorderColor");
 
                 control.State = WaferState.Empty;
+                control.DrawToBitmap(bitmap, new Rectangle(0, 0, bitmap.Width, bitmap.Height));
+                control.State = WaferState.BeforeProcess;
                 control.DrawToBitmap(bitmap, new Rectangle(0, 0, bitmap.Width, bitmap.Height));
                 control.State = WaferState.Processing;
                 control.DrawToBitmap(bitmap, new Rectangle(0, 0, bitmap.Width, bitmap.Height));

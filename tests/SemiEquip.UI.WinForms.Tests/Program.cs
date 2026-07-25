@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Reflection;
+using BathLineControl;
 using SemiEquip.UI.WinForms.Controls;
 
 namespace SemiEquip.UI.WinForms.Tests
@@ -15,6 +16,7 @@ namespace SemiEquip.UI.WinForms.Tests
         {
             try
             {
+                Run("BathLineControl basic API and drawing", TestBathLineControl);
                 Run("RobotTransfer basic API and drawing", TestRobotTransferControl);
                 Run("FoupMap 创建前可设置 SlotCount", TestInitialSlotCount);
                 Run("FoupMap 创建后可设置 SlotCount", TestRuntimeSlotCount);
@@ -296,6 +298,66 @@ namespace SemiEquip.UI.WinForms.Tests
                 AssertTrue(control.Retract(RobotFork.Fork1), "Retract should be accepted for idle fork runtime");
 
                 control.DrawToBitmap(bitmap, new Rectangle(0, 0, bitmap.Width, bitmap.Height));
+            }
+        }
+
+        private static void TestBathLineControl()
+        {
+            using (BathLineControl.BathLineControl control = new BathLineControl.BathLineControl())
+            using (Bitmap bitmap = new Bitmap(500, 300))
+            {
+                control.Size = bitmap.Size;
+                AssertTrue(control.OuterBathEnabled, "Outer bath should be enabled by default");
+                AssertEqual(Color.FromArgb(24, 103, 150), control.OutlineColor, "Default OutlineColor");
+                AssertEqual(2F, control.OutlineWidth, "Default OutlineWidth");
+                AssertEqual(Color.White, control.ChemicalColor, "Default ChemicalColor");
+                AssertEqual(Color.White, control.ChemicalForeColor, "Default ChemicalForeColor");
+                AssertEqual(string.Empty, control.ChemicalText, "Default ChemicalText");
+                AssertEqual(24, control.ChemicalWidth, "Default ChemicalWidth");
+                AssertEqual(24, control.ChemicalHeight, "Default ChemicalHeight");
+                AssertTrue(control.InnerSensorVisible, "InnerSensorVisible should be true by default");
+                AssertTrue(control.OuterSensorVisible, "OuterSensorVisible should be true by default");
+                AssertTrue(!control.InnerLLSensor, "InnerLLSensor should be false by default");
+                AssertTrue(!control.InnerLSensor, "InnerLSensor should be false by default");
+                AssertTrue(!control.InnerHSensor, "InnerHSensor should be false by default");
+                AssertTrue(!control.InnerHHSensor, "InnerHHSensor should be false by default");
+                AssertTrue(!control.OuterLLSensor, "OuterLLSensor should be false by default");
+                AssertTrue(!control.OuterLSensor, "OuterLSensor should be false by default");
+                AssertTrue(!control.OuterHSensor, "OuterHSensor should be false by default");
+                AssertTrue(!control.OuterHHSensor, "OuterHHSensor should be false by default");
+
+                control.OutlineWidth = 0F;
+                AssertEqual(1F, control.OutlineWidth, "OutlineWidth should clamp to one");
+                control.ChemicalColor = Color.Orange;
+                control.ChemicalForeColor = Color.Navy;
+                control.ChemicalText = "H2SO4";
+                control.ChemicalWidth = 0;
+                control.ChemicalHeight = 0;
+                AssertEqual(Color.Orange, control.ChemicalColor, "ChemicalColor");
+                AssertEqual(Color.Navy, control.ChemicalForeColor, "ChemicalForeColor");
+                AssertEqual("H2SO4", control.ChemicalText, "ChemicalText");
+                AssertEqual(1, control.ChemicalWidth, "ChemicalWidth should clamp to one");
+                AssertEqual(1, control.ChemicalHeight, "ChemicalHeight should clamp to one");
+                control.InnerLLSensor = true;
+                control.InnerLSensor = true;
+                control.InnerHSensor = true;
+                control.InnerHHSensor = true;
+                control.OuterLLSensor = true;
+                control.OuterLSensor = true;
+                control.OuterHSensor = true;
+                control.OuterHHSensor = true;
+                AssertTrue(control.InnerHHSensor, "InnerHHSensor");
+                AssertTrue(control.OuterHHSensor, "OuterHHSensor");
+                control.DrawToBitmap(bitmap, new Rectangle(Point.Empty, bitmap.Size));
+
+                control.OuterBathEnabled = false;
+                AssertTrue(control.OuterSensorVisible, "OuterSensorVisible setting should be preserved when outer bath is hidden");
+                AssertTrue(control.OuterLLSensor, "OuterLLSensor value should be preserved when outer bath is hidden");
+                AssertTrue(control.OuterHHSensor, "OuterHHSensor value should be preserved when outer bath is hidden");
+                control.InnerSensorVisible = false;
+                AssertTrue(control.InnerLLSensor, "InnerLLSensor value should be preserved when inner sensors are hidden");
+                AssertTrue(control.InnerHHSensor, "InnerHHSensor value should be preserved when inner sensors are hidden");
+                control.DrawToBitmap(bitmap, new Rectangle(Point.Empty, bitmap.Size));
             }
         }
 

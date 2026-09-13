@@ -2,7 +2,7 @@
 
 面向半导体自动化设备软件的 WinForms 自定义控件库。
 
-项目目标为 **C# / .NET Framework 4.0+ / WinForms**，当前保留 `FoupMapControl`、`WaferControl`、`FourColorLightControl`、`ActionSensorButtonControl`、`RobotTransferControl` 五个控件。控件说明、属性和使用实例统一维护在本文档中。
+项目目标为 **C# / .NET Framework 4.0+ / WinForms**，当前保留 `FoupMapControl`、`WaferControl`、`FourColorLightControl`、`ActionSensorButtonControl`、`RobotTransferControl` 六个控件（含 BathLineControl）。控件说明、属性和使用实例统一维护在本文档中。
 
 ## 项目结构
 
@@ -246,8 +246,8 @@ Controls.Add(wafer);
 | `DefaultBack` | `Color` | 示例色 | `CommandOffBackColor` 的兼容别名，贴近 `AntdUI.Button` 命名。 |
 | `BackHover` | `Color` | 示例色 | `HoverBackColor` 的兼容别名，贴近 `AntdUI.Button` 命名。 |
 | `BackActive` | `Color` | 示例色 | `PressedBackColor` 的兼容别名，贴近 `AntdUI.Button` 命名。 |
-| `CommandOnForeColor` / `CommandOffForeColor` | `Color` | `White` | 动作 True / False 的主体文字色。 |
-| `ForeHover` | `Color` | `White` | 鼠标悬浮且动作为 False 时的文字色，贴近 `AntdUI.Button` 命名。 |
+| `CommandOnForeColor` / `CommandOffForeColor` | `Color` | `White` / `Black` | 动作 True / False 的主体文字色。 |
+| `ForeHover` | `Color` | `RGB(35, 55, 75)` | 鼠标悬浮且动作为 False 时的文字色，贴近 `AntdUI.Button` 命名。 |
 | `SensorOnColor` / `SensorOffColor` | `Color` | 示例色 | 传感器 True / False 的指示颜色。 |
 | `SensorBorderColor` | `Color` | 示例色 | 传感器边框颜色。 |
 | `BorderColor` | `Color` | 示例色 | 控件外框颜色。 |
@@ -274,12 +274,12 @@ actionButton.Sensor1State = ioLiftUpSensor;
 actionButton.Sensor2State = ioLiftDownSensor;
 
 actionButton.CommandOnBackColor = Color.FromArgb(226, 64, 64);      // CommandState = true
-actionButton.DefaultBack = Color.FromArgb(225, 236, 251);           // 默认底色
-actionButton.BackHover = Color.FromArgb(43, 125, 211);              // 鼠标悬浮
+actionButton.DefaultBack = Color.FromArgb(213, 229, 248);           // 默认底色
+actionButton.BackHover = Color.FromArgb(232, 241, 252);              // 鼠标悬浮
 actionButton.BackActive = Color.FromArgb(32, 104, 184);             // 鼠标按下 / CommandState = true
 actionButton.CommandOnForeColor = Color.White;
 actionButton.CommandOffForeColor = Color.Black;
-actionButton.ForeHover = Color.White;
+actionButton.ForeHover = Color.FromArgb(35, 55, 75);
 actionButton.SensorOnColor = Color.FromArgb(40, 112, 210);
 actionButton.SensorOffColor = Color.White;
 actionButton.SensorBorderColor = Color.FromArgb(40, 112, 210);
@@ -453,6 +453,46 @@ Controls.Add(robot);
 
 robot.Start(RobotFork.Fork1, 90.0, RobotTransferAction.Get);
 ```
+
+## BathLineControl
+
+`BathLineControl.BathLineControl` 绘制内槽、可选外槽和液位传感器。槽名称居中显示在内槽中上部，药液文字居中显示在内槽底部指示区域。
+
+### 文字属性
+
+| 属性 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `BathText` | `string` | 空字符串 | 槽名称，单行显示，过长时显示省略号。 |
+| `BathForeColor` | `Color` | `Black` | 槽名称文字颜色。 |
+| `BathFont` | `Font` | 沿用控件 `Font` | 独立设置槽名称字体、字号和样式。 |
+| `ChemicalText` | `string` | 空字符串 | 底部药液描述。 |
+| `ChemicalForeColor` | `Color` | `White` | 药液文字颜色。 |
+| `ChemicalFont` | `Font` | 沿用控件 `Font` | 独立设置药液文字字体、字号和样式。 |
+| `ChemicalColor` | `Color` | `White` | 药液指示区域背景色。 |
+| `ChemicalWidth` / `ChemicalHeight` | `int` | `24` / `24` | 药液区域宽高，单位为像素，最小为 1。 |
+
+修改属性后自动重绘。文字设为 `null` 按空字符串处理；字体设为 `null` 或在设计器中重置后恢复沿用控件 `Font`。两段文字字体互不影响，传感器标签仍使用控件 `Font`。较大药液字体需配合调整药液区域宽高。
+
+### 基本示例
+
+```csharp
+var bath = new BathLineControl.BathLineControl
+{
+    Size = new Size(560, 340),
+    BathText = "清洗槽 01",
+    BathForeColor = Color.Black,
+    BathFont = new Font("微软雅黑", 18F, FontStyle.Bold),
+    ChemicalText = "H2SO4",
+    ChemicalForeColor = Color.Navy,
+    ChemicalFont = new Font("Arial", 12F, FontStyle.Regular),
+    ChemicalColor = Color.Transparent,
+    ChemicalWidth = 150,
+    ChemicalHeight = 34
+};
+Controls.Add(bath);
+```
+
+Demo 的 BathLine 页面支持实时编辑两段文字、分别选择字体和文字颜色，并调整药液区域尺寸、背景色、槽体和传感器状态。
 
 ## 自动化验证
 

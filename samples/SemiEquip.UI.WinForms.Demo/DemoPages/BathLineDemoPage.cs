@@ -36,14 +36,15 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
                 Size = new Size(560, 340),
                 Padding = new Padding(28),
                 OutlineWidth = 3F,
-                ChemicalColor = Color.Transparent,
-                ChemicalText = "",
+                ChemicalColor = Color.Yellow,
+                ChemicalText = "H2SO4",
                 ChemicalWidth = 150,
                 ChemicalHeight = 34,
                 OuterBathEnabled = true,
                 InnerLLSensor = true,
                 InnerLSensor = true,
-                OuterLLSensor = true
+                OuterLLSensor = true,
+                BathText = "槽体",
             };
             previewPanel.Controls.Add(_bath);
 
@@ -56,15 +57,28 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
                 BackColor = Color.White
             };
 
-            GroupBox bathGroup = CreateGroup("槽体", 0, 0, 370, 90);
+            GroupBox bathGroup = CreateGroup("槽体", 0, 0, 370, 190);
             _outerBathEnabled = CreateCheckBox("OuterBathEnabled", 16, 28, _bath.OuterBathEnabled);
             NumericUpDown outlineWidth = CreateNumber(190, 26, 1, 20, (decimal)_bath.OutlineWidth);
             outlineWidth.ValueChanged += delegate { _bath.OutlineWidth = (float)outlineWidth.Value; };
             bathGroup.Controls.Add(_outerBathEnabled);
             bathGroup.Controls.Add(CreateLabel("OutlineWidth", 190, 10));
             bathGroup.Controls.Add(outlineWidth);
+            TextBox bathText = new TextBox
+            {
+                Location = new Point(120, 65),
+                Size = new Size(220, 24),
+                Text = _bath.BathText
+            };
+            bathText.TextChanged += delegate { _bath.BathText = bathText.Text; };
+            bathGroup.Controls.Add(CreateLabel("BathText", 16, 69));
+            bathGroup.Controls.Add(bathText);
+            bathGroup.Controls.Add(CreateFontButton("BathFont 字体 / 字号", 104,
+                delegate { return _bath.BathFont; }, delegate(Font font) { _bath.BathFont = font; }));
+            bathGroup.Controls.Add(CreateTextColorButton("BathForeColor", 144,
+                delegate { return _bath.BathForeColor; }, delegate(Color color) { _bath.BathForeColor = color; }));
 
-            GroupBox chemicalGroup = CreateGroup("Chemical", 0, 100, 370, 180);
+            GroupBox chemicalGroup = CreateGroup("Chemical", 0, 200, 370, 230);
             TextBox chemicalText = new TextBox
             {
                 Location = new Point(120, 26),
@@ -102,8 +116,12 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
             chemicalGroup.Controls.Add(CreateLabel("高", 210, 66));
             chemicalGroup.Controls.Add(chemicalHeight);
             chemicalGroup.Controls.Add(chemicalColor);
+            chemicalGroup.Controls.Add(CreateFontButton("ChemicalFont 字体 / 字号", 144,
+                delegate { return _bath.ChemicalFont; }, delegate(Font font) { _bath.ChemicalFont = font; }));
+            chemicalGroup.Controls.Add(CreateTextColorButton("ChemicalForeColor", 184,
+                delegate { return _bath.ChemicalForeColor; }, delegate(Color color) { _bath.ChemicalForeColor = color; }));
 
-            GroupBox sensorGroup = CreateGroup("Level Sensors", 0, 290, 370, 260);
+            GroupBox sensorGroup = CreateGroup("Level Sensors", 0, 440, 370, 260);
             _innerSensorVisible = CreateCheckBox("InnerSensorVisible", 16, 28, true);
             _outerSensorVisible = CreateCheckBox("OuterSensorVisible", 190, 28, true);
             sensorGroup.Controls.Add(_innerSensorVisible);
@@ -156,6 +174,40 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
             Controls.Add(previewPanel);
             Controls.Add(propertyPanel);
             SyncSensorControls();
+        }
+
+        private Button CreateFontButton(string text, int y, Func<Font> getter, Action<Font> setter)
+        {
+            Button button = new Button { Text = text, Location = new Point(120, y), Size = new Size(220, 32) };
+            button.Click += delegate
+            {
+                using (FontDialog dialog = new FontDialog())
+                {
+                    dialog.Font = getter();
+                    if (dialog.ShowDialog(this) == DialogResult.OK)
+                    {
+                        setter(dialog.Font);
+                    }
+                }
+            };
+            return button;
+        }
+
+        private Button CreateTextColorButton(string text, int y, Func<Color> getter, Action<Color> setter)
+        {
+            Button button = new Button { Text = text, Location = new Point(120, y), Size = new Size(220, 32) };
+            button.Click += delegate
+            {
+                using (ColorDialog dialog = new ColorDialog())
+                {
+                    dialog.Color = getter();
+                    if (dialog.ShowDialog(this) == DialogResult.OK)
+                    {
+                        setter(dialog.Color);
+                    }
+                }
+            };
+            return button;
         }
 
         private void BindSensor(CheckBox checkBox, Action<bool> setter)

@@ -19,6 +19,10 @@ namespace BathLineControl
         private Color _chemicalColor = Color.White;
         private Color _chemicalForeColor = Color.White;
         private string _chemicalText = string.Empty;
+        private string _bathText = string.Empty;
+        private Color _bathForeColor = Color.Black;
+        private Font _bathFont;
+        private Font _chemicalFont;
         private int _chemicalWidth = 24;
         private int _chemicalHeight = 24;
         private bool _innerSensorVisible = true;
@@ -136,6 +140,97 @@ namespace BathLineControl
                 _chemicalText = normalizedValue;
                 Invalidate();
             }
+        }
+
+        [Category("Appearance")]
+        [Description("Bath name displayed in the upper middle of the inner bath.")]
+        [DefaultValue("")]
+        public string BathText
+        {
+            get { return _bathText; }
+            set
+            {
+                string normalizedValue = value ?? string.Empty;
+                if (_bathText == normalizedValue)
+                {
+                    return;
+                }
+
+                _bathText = normalizedValue;
+                Invalidate();
+            }
+        }
+
+        [Category("Appearance")]
+        [Description("Color of the bath name text.")]
+        [DefaultValue(typeof(Color), "Black")]
+        public Color BathForeColor
+        {
+            get { return _bathForeColor; }
+            set
+            {
+                if (_bathForeColor == value)
+                {
+                    return;
+                }
+
+                _bathForeColor = value;
+                Invalidate();
+            }
+        }
+
+        [Category("Appearance")]
+        [Description("Font of the bath name text. Uses the control Font when not set.")]
+        public Font BathFont
+        {
+            get { return _bathFont ?? Font; }
+            set
+            {
+                if (object.Equals(_bathFont, value))
+                {
+                    return;
+                }
+
+                _bathFont = value;
+                Invalidate();
+            }
+        }
+
+        private bool ShouldSerializeBathFont()
+        {
+            return _bathFont != null;
+        }
+
+        private void ResetBathFont()
+        {
+            BathFont = null;
+        }
+
+        [Category("Appearance")]
+        [Description("Font of the chemical description text. Uses the control Font when not set.")]
+        public Font ChemicalFont
+        {
+            get { return _chemicalFont ?? Font; }
+            set
+            {
+                if (object.Equals(_chemicalFont, value))
+                {
+                    return;
+                }
+
+                _chemicalFont = value;
+                Invalidate();
+            }
+        }
+
+        private bool ShouldSerializeChemicalFont()
+        {
+            return _chemicalFont != null;
+        }
+
+        private void ResetChemicalFont()
+        {
+            ChemicalFont = null;
         }
 
         [Category("Appearance")]
@@ -328,6 +423,7 @@ namespace BathLineControl
             }
 
             DrawChemicalIndicator(e.Graphics, innerLeft, innerRight, top, bottom);
+            DrawBathText(e.Graphics, innerLeft, innerRight, top, bottom);
             DrawLevelSensors(e.Graphics, drawingBounds);
         }
 
@@ -407,6 +503,35 @@ namespace BathLineControl
             }
         }
 
+        private void DrawBathText(Graphics graphics, float innerLeft, float innerRight, float top, float bottom)
+        {
+            if (_bathText.Length == 0)
+            {
+                return;
+            }
+
+            float inset = 4F + _outlineWidth / 2F;
+            RectangleF bounds = new RectangleF(
+                innerLeft + inset,
+                top + (bottom - top) * 0.2F,
+                innerRight - innerLeft - inset * 2F,
+                (bottom - top) * 0.25F);
+            if (bounds.Width <= 0F || bounds.Height <= 0F)
+            {
+                return;
+            }
+
+            using (SolidBrush brush = new SolidBrush(_bathForeColor))
+            using (StringFormat format = new StringFormat())
+            {
+                format.Alignment = StringAlignment.Center;
+                format.LineAlignment = StringAlignment.Center;
+                format.Trimming = StringTrimming.EllipsisCharacter;
+                format.FormatFlags = StringFormatFlags.NoWrap;
+                graphics.DrawString(_bathText, BathFont, brush, bounds, format);
+            }
+        }
+
         private void DrawChemicalIndicator(Graphics graphics, float innerLeft, float innerRight, float top, float bottom)
         {
             const float gap = 4F;
@@ -434,7 +559,7 @@ namespace BathLineControl
                     format.Alignment = StringAlignment.Center;
                     format.LineAlignment = StringAlignment.Center;
                     format.Trimming = StringTrimming.EllipsisCharacter;
-                    graphics.DrawString(_chemicalText, Font, textBrush, new RectangleF(x, y, width, height), format);
+                    graphics.DrawString(_chemicalText, ChemicalFont, textBrush, new RectangleF(x, y, width, height), format);
                 }
             }
         }

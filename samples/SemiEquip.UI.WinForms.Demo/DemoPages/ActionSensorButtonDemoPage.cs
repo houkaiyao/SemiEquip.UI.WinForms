@@ -270,7 +270,7 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
 
         private void ApplyBluePalette()
         {
-            ApplyPalette(Color.FromArgb(226, 64, 64), Color.FromArgb(225, 236, 251), Color.FromArgb(40, 112, 210), Color.White, Color.FromArgb(40, 112, 210), Color.White, Color.Black);
+            ApplyPalette(Color.FromArgb(226, 64, 64), Color.FromArgb(213, 229, 248), Color.FromArgb(40, 112, 210), Color.White, Color.FromArgb(40, 112, 210), Color.White, Color.Black);
         }
 
         private void ApplyAmberPalette()
@@ -290,11 +290,11 @@ namespace SemiEquip.UI.WinForms.Demo.DemoPages
                 ActionSensorButtonControl control = _buttons[index];
                 control.CommandOnBackColor = commandOn;
                 control.CommandOffBackColor = commandOff;
-                control.BackHover = Color.FromArgb(43, 125, 211);
+                control.BackHover = Color.FromArgb(232, 241, 252);
                 control.BackActive = Color.FromArgb(32, 104, 184);
                 control.CommandOnForeColor = commandOnFore;
                 control.CommandOffForeColor = commandOffFore;
-                control.ForeHover = Color.White;
+                control.ForeHover = Color.FromArgb(35, 55, 75);
                 control.SensorOnColor = sensorOn;
                 control.SensorOffColor = sensorOff;
                 control.SensorBorderColor = border;

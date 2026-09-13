@@ -20,12 +20,12 @@ namespace SemiEquip.UI.WinForms.Controls
         private bool _sensor1State;
         private bool _sensor2State;
         private Color _commandOnBackColor = Color.FromArgb(226, 64, 64);
-        private Color _commandOffBackColor = Color.FromArgb(225, 236, 251);
-        private Color _hoverBackColor = Color.FromArgb(43, 125, 211);
+        private Color _commandOffBackColor = Color.FromArgb(213, 229, 248);
+        private Color _hoverBackColor = Color.FromArgb(232, 241, 252);
         private Color _pressedBackColor = Color.FromArgb(32, 104, 184);
         private Color _commandOnForeColor = Color.White;
         private Color _commandOffForeColor = Color.Black;
-        private Color _hoverForeColor = Color.White;
+        private Color _hoverForeColor = Color.FromArgb(35, 55, 75);
         private Color _sensorOnColor = Color.FromArgb(40, 112, 210);
         private Color _sensorOffColor = Color.White;
         private Color _sensorBorderColor = Color.FromArgb(40, 112, 210);
@@ -663,7 +663,12 @@ namespace SemiEquip.UI.WinForms.Controls
                 return _commandOnForeColor;
             }
 
-            if (_mouseHover || _mousePressed)
+            if (_mousePressed)
+            {
+                return Color.White;
+            }
+
+            if (_mouseHover)
             {
                 return _hoverForeColor;
             }
